@@ -1,23 +1,17 @@
 // ============================================================================
-// KERNEL OS - DÍL A: GLOBÁLNÍ REGISTRY A MANAGEMENT PLOCHY
+// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 1 ze 4
 // ============================================================================
-// Přidejte 'textbook' položku do vašeho registru na začátku Dílu A/B:
 const APP_REGISTRY = {
   notepad: { title: 'Notepad', w: 540, h: 440 },
   files: { title: 'Files', w: 720, h: 480 },
   calculator: { title: 'KCalc (Kalkulačka)', w: 340, h: 440 },
-  textbook: { title: 'Učebnice a slovníky', w: 680, h: 500 } // Nová aplikace
-};
-const APP_REGISTRY = {
-  notepad: { title: 'Notepad', w: 540, h: 440 },
-  files: { title: 'Files', w: 720, h: 480 },
-  calculator: { title: 'KCalc (Kalkulačka)', w: 340, h: 440 }
+  textbook: { title: 'Učebnice a slovníky', w: 680, h: 500 }
 };
 
 const SECURE_REG = { usr: 'stepan', pwd: 'janas' };
 
 const sys_state = {
-  m_windows: new Map(),
+  m_windows: new Map(), // Paměťově efektivní alokace oken namísto Array
   next_pid: 1,
   active_pid: null,
   kernel_ready: false,
@@ -49,6 +43,8 @@ function initLogin() {
     if (loginForm) {
       loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
+        
+        // Oříznutí mezer a převod na malá písmena pro eliminaci překlepů klávesnic
         const u = document.getElementById('username').value.trim().toLowerCase();
         const p = document.getElementById('password').value.trim().toLowerCase();
 
@@ -57,7 +53,7 @@ function initLogin() {
           if (loginScreen) loginScreen.classList.add('hidden');
           bootDesktop();
         } else {
-          if (loginError) loginError.textContent = 'Hardware Auth Refused';
+          if (loginError) loginError.textContent = 'Hardware Auth Refused: Invalid Credentials';
         }
       });
     }
@@ -66,7 +62,9 @@ function initLogin() {
   if (loginScreen) loginScreen.classList.add('hidden');
   bootDesktop();
 }
-
+// ============================================================================
+// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 2 ze 4
+// ============================================================================
 function bootDesktop() {
   if (sys_state.kernel_ready || !getSysAuth()) return;
   sys_state.kernel_ready = true;
@@ -80,7 +78,7 @@ function bootDesktop() {
 
   buildHardwareIcons();
   syncTaskbar();
-  requestPid('calculator'); 
+  requestPid('calculator'); // Spustí bleskurychle kalkulačku hned po bootu
 
   const start_btn = document.getElementById('start-button');
   if (start_btn) {
@@ -117,17 +115,25 @@ function buildHardwareIcons() {
   });
   sys_state.dom_icons.appendChild(fragment);
 }
+
+function syncTaskbar() {
+  if (!sys_state.dom_taskbar) return; sys_state.dom_taskbar.innerHTML = '';
+  const frag = document.createDocumentFragment();
+  for (let [id, win] of sys_state.m_windows) {
+    const btn = document.createElement('button'); btn.className = `taskbar-item ${sys_state.active_pid === id ? 'active' : ''}`;
+    btn.textContent = win.title; btn.addEventListener('click', () => { if (win.minimized) { win.node.style.setProperty('display', 'flex'); win.minimized = false; } switchFocus(id); });
+    frag.appendChild(btn);
+  }
+  sys_state.dom_taskbar.appendChild(frag);
+}
 // ============================================================================
-// KERNEL OS - DÍL B1: PROCESY A ŠABLONY OKEN (MAX 90 ŘÁDKŮ)
+// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 3 ze 4
 // ============================================================================
 function requestPid(app_type) {
   if (!sys_state.dom_layer) return;
   for (let [pid, win] of sys_state.m_windows) {
     if (win.type === app_type) {
-      if (win.minimized) {
-        win.node.style.setProperty('display', 'flex');
-        win.minimized = false;
-      }
+      if (win.minimized) { win.node.style.setProperty('display', 'flex'); win.minimized = false; }
       switchFocus(pid); return;
     }
   }
@@ -143,6 +149,49 @@ function requestPid(app_type) {
   allocateRenderLayer(win_obj);
 }
 
+function switchFocus(pid) {
+  let index = 0;
+  for (let [id, win] of sys_state.m_windows) {
+    const is_target = id === pid; win.node.classList.toggle('focused', is_target);
+    win.node.style.setProperty('z-index', is_target ? '5000' : String(100 + index));
+    if (is_target) sys_state.active_pid = pid; index++;
+  }
+  syncTaskbar();
+}
+
+function bindHardwareDrag(element, win) {
+  const header = element.querySelector('.window-header'); if (!header) return;
+  let ox = 0, oy = 0;
+  header.addEventListener('pointerdown', (e) => {
+    if (e.target.matches('button')) return; ox = e.clientX - win.x; oy = e.clientY - win.y;
+    element.setPointerCapture(e.pointerId);
+    const drag = (ev) => { win.x = ev.clientX - ox; win.y = ev.clientY - oy; element.style.setProperty('transform', `translate3d(${win.x}px, ${win.y}px, 0px)`); };
+    const stop = () => { element.removeEventListener('pointermove', drag); element.removeEventListener('pointerup', stop); };
+    element.addEventListener('pointermove', drag); element.addEventListener('pointerup', stop);
+  });
+}
+
+function registerAndSpawn(node, win) {
+  win.node = node; sys_state.m_windows.set(win.id, win);
+  node.addEventListener('pointerdown', () => switchFocus(win.id));
+  node.querySelectorAll('.control-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation(); const target_pid = btn.dataset.pid;
+      if (btn.classList.contains('close')) { document.getElementById(target_pid)?.remove(); sys_state.m_windows.delete(target_pid); }
+      else { const w_data = sys_state.m_windows.get(target_pid); if (w_data) { w_data.node.style.setProperty('display', 'none'); w_data.minimized = true; } }
+      syncTaskbar();
+    });
+  });
+  bindHardwareDrag(node, win); sys_state.dom_layer.appendChild(node);
+  
+  if (win.type === 'calculator' && window.initScientificCalculator) window.initScientificCalculator(win.id, node);
+  if (win.type === 'textbook' && window.initTextbookApp) window.initTextbookApp(win.id, node);
+
+  setTimeout(() => node.classList.add('window-open'), 10); switchFocus(win.id);
+}
+// ============================================================================
+// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 4 ze 4
+// ============================================================================
 function allocateRenderLayer(win) {
   const node = document.createElement('div');
   node.className = 'window'; node.id = win.id;
@@ -176,8 +225,7 @@ function allocateRenderLayer(win) {
         </div>
         <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:2px 0;">🌌 Fyzikální konstanty</div>
         <div class="calculator-grid" style="grid-template-columns: repeat(4, 1fr); grid-template-rows: 34px; flex:none; gap:5px;">
-          <button class="calc-key operator" data-v="3.14159265">π</button><button class="calc-key operator" data-v="2.71828182">e</button>
-          <button class="calc-key operator" data-v="9.81">g</button><button class="calc-key operator" data-v="299792458">c</button>
+          <button class="calc-key operator" data-v="3.14159265">π</button><button class="calc-key operator" data-v="2.71828182">e</button><button class="calc-key operator" data-v="9.81">g</button><button class="calc-key operator" data-v="299792458">c</button>
         </div>
       </div>`;
   }
@@ -217,66 +265,8 @@ function allocateRenderLayer(win) {
       </div>`;
   }
 
-  // Pokračování správy oken se předává dalšímu dílu
+  // Volání vícenásobné bezpečné registrace z Části 3
   registerAndSpawn(node, win);
 }
-// ============================================================================
-// KERNEL OS - DÍL B2: REGESTRACE OKEN, HARDWARE DRAG A TASKBAR (MAX 95 ŘÁDKŮ)
-// ============================================================================
-function registerAndSpawn(node, win) {
-  sys_state.m_windows.set(win.id, win);
-  node.addEventListener('pointerdown', () => switchFocus(win.id));
-  node.querySelectorAll('.control-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation(); const target_pid = btn.dataset.pid;
-      if (btn.classList.contains('close')) { document.getElementById(target_pid)?.remove(); sys_state.m_windows.delete(target_pid); }
-      else { const w_data = sys_state.m_windows.get(target_pid); if (w_data) { w_data.node.style.setProperty('display', 'none'); w_data.minimized = true; } }
-      syncTaskbar();
-    });
-  });
 
-  bindHardwareDrag(node, win); sys_state.dom_layer.appendChild(node);
-  
-  // Bezpečné volání izolovaných aplikací až po usazení do DOMu
-  if (win.type === 'calculator' && window.initScientificCalculator) window.initScientificCalculator(win.id, node);
-  if (win.type === 'textbook' && window.initTextbookApp) window.initTextbookApp(win.id, node);
-
-  setTimeout(() => node.classList.add('window-open'), 10); switchFocus(win.id);
-}
-
-function switchFocus(pid) {
-  let index = 0;
-  for (let [id, win] of sys_state.m_windows) {
-    const is_target = id === pid; win.node.classList.toggle('focused', is_target);
-    win.node.style.setProperty('z-index', is_target ? '5000' : String(100 + index));
-    if (is_target) sys_state.active_pid = pid; index++;
-  }
-  syncTaskbar();
-}
-
-function bindHardwareDrag(element, win) {
-  const header = element.querySelector('.window-header'); if (!header) return;
-  let ox = 0, oy = 0;
-  header.addEventListener('pointerdown', (e) => {
-    if (e.target.matches('button')) return; ox = e.clientX - win.x; oy = e.clientY - win.y;
-    element.setPointerCapture(e.pointerId);
-    const drag = (ev) => { win.x = ev.clientX - ox; win.y = ev.clientY - oy; element.style.setProperty('transform', `translate3d(${win.x}px, ${win.y}px, 0px)`); };
-    const stop = () => { element.removeEventListener('pointermove', drag); element.removeEventListener('pointerup', stop); };
-    element.addEventListener('pointermove', drag); element.addEventListener('pointerup', stop);
-  });
-}
-
-function syncTaskbar() {
-  if (!sys_state.dom_taskbar) return; sys_state.dom_taskbar.innerHTML = '';
-  const frag = document.createDocumentFragment();
-  for (let [id, win] of sys_state.m_windows) {
-    const btn = document.createElement('button'); btn.className = `taskbar-item ${sys_state.active_pid === id ? 'active' : ''}`;
-    btn.textContent = win.title; btn.addEventListener('click', () => { if (win.minimized) { win.node.style.setProperty('display', 'flex'); win.minimized = false; } switchFocus(id); });
-    frag.appendChild(btn);
-  }
-  sys_state.dom_taskbar.appendChild(frag);
-}
-
-// Spuštění inicializační sekvence jádra
 if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initLogin); } else { initLogin(); }
-
