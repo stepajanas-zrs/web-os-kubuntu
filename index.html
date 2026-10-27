@@ -34,16 +34,17 @@
       <button class="primary-btn" type="submit" style="font-weight: bold; margin-top: 6px; padding: 10px;">
         Přihlásit se
       </button>
-
+      
       <div style="text-align: center; font-size: 0.75rem; color: var(--muted); margin-top: 4px;">
         Výchozí: stepan / janas
       </div>
     </form>
   </div>
+
   <!-- ==========================================
        2. HLAVNÍ PLOCHA (KUBUNTU PLASMA DESKTOP)
        ========================================== -->
-  <main class="desktop hidden-on-login" style="display: none;">
+  <main class="desktop hidden-on-login">
     <!-- Ikony na ploše (Dolphin, Kate, Discover + stažené programy) -->
     <div id="desktop-icons" class="desktop-icons"></div>
 
@@ -57,7 +58,7 @@
   <!-- ==========================================
        3. SPODNÍ PANEL (KDE PLASMA PANEL)
        ========================================== -->
-  <footer class="taskbar hidden-on-login" style="display: none;">
+  <footer class="taskbar hidden-on-login">
     <!-- Spouštěcí tlačítko / Logo Kubuntu -->
     <button id="start-button" class="start-button" type="button" aria-label="Nabídka aplikací">
       <span style="filter: drop-shadow(0 0 4px rgba(61,174,233,0.6));">🌀</span>
