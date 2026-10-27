@@ -314,7 +314,6 @@ function renderWindow(win) {
     <div class="window-content"></div>
   `;
 
-  // --- NOTEPAD ---
   if (win.type === 'notepad') {
     const content = wrapper.querySelector('.window-content');
     content.innerHTML = `
@@ -340,25 +339,18 @@ function renderWindow(win) {
     }
   }
 
-  // --- FILES ---
   if (win.type === 'files') {
     wrapper.querySelector('.window-content').innerHTML = `
       <div class="app-content files-content">
         <div class="files-layout">
-          <div class="file-list">
-            <ul id="file-list-${win.id}"></ul>
-          </div>
-          <div class="file-preview">
-            <h3 id="file-name-${win.id}"></h3>
-            <pre id="file-content-${win.id}"></pre>
-          </div>
+          <div class="file-list"><ul id="file-list-${win.id}"></ul></div>
+          <div class="file-preview"><h3 id="file-name-${win.id}"></h3><pre id="file-content-${win.id}"></pre></div>
         </div>
       </div>
     `;
     renderFileExplorer(win.id);
   }
 
-  // --- BROWSER ---
   if (win.type === 'browser') {
     wrapper.querySelector('.window-content').innerHTML = `
       <div class="app-content browser-content">
@@ -366,10 +358,7 @@ function renderWindow(win) {
           <input id="browser-url-${win.id}" value="${state.browserUrl}" />
           <button class="primary-btn" type="button" data-browser-go="${win.id}">Go</button>
         </div>
-        <div class="browser-page" id="browser-page-${win.id}">
-          <h2>Vítejte ve Web Browseru</h2>
-          <p>Prozkoumejte stránky v rámci virtuálního OS.</p>
-        </div>
+        <div class="browser-page" id="browser-page-${win.id}"><h2>Web Browser</h2><p>Aplikace připravena.</p></div>
       </div>
     `;
     const input = document.getElementById(`browser-url-${win.id}`);
@@ -377,18 +366,25 @@ function renderWindow(win) {
     const go = wrapper.querySelector('[data-browser-go]');
     if (go && input && page) {
       go.addEventListener('click', () => {
-        const url = input.value.trim();
-        if (!url) return;
+        const url = input.value.trim(); if (!url) return;
         state.browserUrl = url;
         const target = url.startsWith('http') ? url : `https://${url}`;
-        page.innerHTML = `<h2>${target}</h2><p>Načítání obsahu...</p>`;
+        page.innerHTML = `<h2>${target}</h2><p>Načítání...</p>`;
         fetch(`https://jina.ai{target.replace(/^https?:\/\//, '')}`)
           .then((res) => res.text())
           .then((text) => { page.innerHTML = `<h2>${target}</h2><pre>${escapeHtml(text.slice(0, 4000))}</pre>`; })
-          .catch(() => { page.innerHTML = `<h2>${target}</h2><p>Nepodařilo se načíst obsah.</p>`; });
+          .catch(() => { page.innerHTML = `<h2>${target}</h2><p>Chyba načítání.</p>`; });
       });
     }
   }
+
+  // Přesunuto dokončení struktury okna přímo sem do samostatné funkce!
+  setupWindowControls(wrapper, win);
+}
+// ============================================================================
+// DÍL 5: OBSAH OKEN - TERMINAL, CALCULATOR A UTILITY
+// ============================================================================
+function setupWindowControls(wrapper, win) {
   // --- TERMINAL ---
   if (win.type === 'terminal') {
     wrapper.querySelector('.window-content').innerHTML = `
@@ -405,10 +401,8 @@ function renderWindow(win) {
     const runBtn = wrapper.querySelector('[data-terminal-run]');
     const runCommand = () => {
       if (!input || !output) return;
-      const command = input.value.trim();
-      if (!command) return;
-      output.textContent += `\nweb-os$ ${command}`;
-      input.value = '';
+      const command = input.value.trim(); if (!command) return;
+      output.textContent += `\nweb-os$ ${command}`; input.value = '';
       const result = handleTerminalCommand(command, win.id);
       if (result) output.textContent += `\n${result}`;
       output.scrollTop = output.scrollHeight;
@@ -427,47 +421,35 @@ function renderWindow(win) {
           <button class="calc-key operator" data-value="/">/</button>
           <button class="calc-key operator" data-value="*">×</button>
           <button class="calc-key operator" data-value="DEL">DEL</button>
-          <button class="calc-key" data-value="7">7</button>
-          <button class="calc-key" data-value="8">8</button>
-          <button class="calc-key" data-value="9">9</button>
+          <button class="calc-key" data-value="7">7</button><button class="calc-key" data-value="8">8</button><button class="calc-key" data-value="9">9</button>
           <button class="calc-key operator" data-value="-">−</button>
-          <button class="calc-key" data-value="4">4</button>
-          <button class="calc-key" data-value="5">5</button>
-          <button class="calc-key" data-value="6">6</button>
+          <button class="calc-key" data-value="4">4</button><button class="calc-key" data-value="5">5</button><button class="calc-key" data-value="6">6</button>
           <button class="calc-key operator" data-value="+">+</button>
-          <button class="calc-key" data-value="1">1</button>
-          <button class="calc-key" data-value="2">2</button>
-          <button class="calc-key" data-value="3">3</button>
+          <button class="calc-key" data-value="1">1</button><button class="calc-key" data-value="2">2</button><button class="calc-key" data-value="3">3</button>
           <button class="calc-key equals" data-value="=">=</button>
-          <button class="calc-key" data-value="0" style="grid-column: span 3;">0</button>
-          <button class="calc-key" data-value=".">.</button>
+          <button class="calc-key" data-value="0" style="grid-column: span 3;">0</button><button class="calc-key" data-value=".">.</button>
         </div>
       </div>
     `;
-
     const screen = document.getElementById(`calc-screen-${win.id}`);
     let expr = ''; let disp = '0';
-    
     wrapper.addEventListener('click', (event) => {
-      const btn = event.target.closest('.calc-key');
-      if (!btn) return;
-      const val = btn.dataset.value;
-      if (!val) return;
-
+      const btn = event.target.closest('.calc-key'); if (!btn) return;
+      const val = btn.dataset.value; if (!val) return;
       if (val === 'C') { expr = ''; disp = '0'; }
       else if (val === 'DEL') { expr = expr.slice(0, -1); disp = expr || '0'; }
       else if (val === '=') {
         try { disp = String(Function(`"use strict"; return (${expr || '0'})`)()); expr = disp; }
         catch { disp = 'Error'; expr = ''; }
       } else {
-        if (expr === '0' && val !== '.') { expr = val; }
-        else { expr += val; }
+        if (expr === '0' && val !== '.') { expr = val; } else { expr += val; }
         disp = expr;
       }
       if (screen) screen.textContent = disp;
     });
   }
 
+  // Společná systémová tlačítka oken a tažení
   wrapper.addEventListener('pointerdown', () => focusWindow(win.id));
   wrapper.querySelectorAll('[data-action]').forEach((b) => {
     b.addEventListener('click', () => {
@@ -481,78 +463,53 @@ function renderWindow(win) {
   if (windowsLayer) windowsLayer.appendChild(wrapper);
 }
 
-// --- SYSTÉMOVÉ UTILITY ---
+// --- POMOCNÉ UTILITY ---
 function updateClock() {
   if (!clock) return;
-  const now = new Date();
-  clock.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const now = new Date(); clock.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
-
 function showToast(msg) {
-  const toast = document.createElement('div');
-  toast.className = 'toast visible';
-  toast.textContent = msg;
+  const toast = document.createElement('div'); toast.className = 'toast visible'; toast.textContent = msg;
   document.body.appendChild(toast);
-  setTimeout(() => {
-    toast.classList.remove('visible');
-    setTimeout(() => toast.remove(), 220);
-  }, 1500);
+  setTimeout(() => { toast.classList.remove('visible'); setTimeout(() => toast.remove(), 220); }, 1500);
 }
-
 function desktopIcon(name, app, emoji) {
   if (!desktopIcons) return;
-  const el = document.createElement('button');
-  el.className = 'desktop-icon';
-  el.type = 'button';
+  const el = document.createElement('button'); el.className = 'desktop-icon'; el.type = 'button';
   el.innerHTML = `<div class="icon">${emoji}</div><div class="label">${name}</div>`;
-  el.addEventListener('click', () => openApp(app));
-  desktopIcons.appendChild(el);
+  el.addEventListener('click', () => openApp(app)); desktopIcons.appendChild(el);
 }
-
 function buildDesktopIcons() {
-  if (!desktopIcons) return;
-  desktopIcons.innerHTML = '';
-  desktopIcon('Notepad', 'notepad', '✎');
-  desktopIcon('Files', 'files', '📁');
-  desktopIcon('Browser', 'browser', '🌐');
-  desktopIcon('Terminal', 'terminal', '⌨');
+  if (!desktopIcons) return; desktopIcons.innerHTML = '';
+  desktopIcon('Notepad', 'notepad', '✎'); desktopIcon('Files', 'files', '📁');
+  desktopIcon('Browser', 'browser', '🌐'); desktopIcon('Terminal', 'terminal', '⌨');
   desktopIcon('Calculator', 'calculator', '🧮');
 }
-
 function renderTaskbar() {
-  if (!taskbarApps) return;
-  taskbarApps.innerHTML = '';
+  if (!taskbarApps) return; taskbarApps.innerHTML = '';
   state.windows.forEach((win) => {
-    const btn = document.createElement('button');
-    btn.className = `taskbar-item ${state.activeApp === win.id ? 'active' : ''}`;
-    btn.textContent = win.title;
-    btn.addEventListener('click', () => {
-      const el = document.getElementById(win.id);
-      if (el && win.minimized) { el.style.display = 'block'; win.minimized = false; }
+    const btn = document.createElement('button'); btn.className = `taskbar-item ${state.activeApp === win.id ? 'active' : ''}`;
+    btn.textContent = win.title; btn.addEventListener('click', () => {
+      const el = document.getElementById(win.id); if (el && win.minimized) { el.style.display = 'block'; win.minimized = false; }
       focusWindow(win.id);
     });
     taskbarApps.appendChild(btn);
   });
 }
-
 function renderFileExplorer(id) {
   const list = document.getElementById(`file-list-${id}`);
   const fileName = document.getElementById(`file-name-${id}`);
   const content = document.getElementById(`file-content-${id}`);
-  if (!list) return;
-  list.innerHTML = '';
+  if (!list) return; list.innerHTML = '';
   Object.keys(state.fileSystem).forEach((path) => {
-    const li = document.createElement('li');
-    const btn = document.createElement('button');
-    btn.textContent = path; btn.type = 'button';
-    if (path === state.selectedFile) btn.classList.add('active');
+    const li = document.createElement('li'); const btn = document.createElement('button');
+    btn.textContent = path; btn.type = 'button'; if (path === state.selectedFile) btn.classList.add('active');
     btn.addEventListener('click', () => { state.selectedFile = path; renderFileExplorer(id); });
     li.appendChild(btn); list.appendChild(li);
   });
   if (fileName) fileName.textContent = state.selectedFile;
   if (content) content.textContent = state.fileSystem[state.selectedFile] || '';
 }
-
 function handleTerminalCommand(command, id) {
   const lower = command.toLowerCase().trim();
   if (lower === 'help') return 'Dostupné: help, ls, open [notes/files/browser/calculator], clear, whoami, clock';
@@ -565,22 +522,11 @@ function handleTerminalCommand(command, id) {
     if (app === 'calculator') { openApp('calculator'); return 'Kalkulačka otevřena.'; }
     return 'Neznámá aplikace.';
   }
-  if (lower === 'clear') {
-    const out = document.getElementById(`terminal-output-${id}`);
-    if (out) out.textContent = 'web-os$ welcome\nSystem ready.';
-    return '';
-  }
-  if (lower === 'whoami') return 'stepan';
-  if (lower === 'clock') return new Date().toLocaleTimeString();
+  if (lower === 'clear') { const out = document.getElementById(`terminal-output-${id}`); if (out) out.textContent = 'web-os$\nSystem ready.'; return ''; }
+  if (lower === 'whoami') return 'stepan'; if (lower === 'clock') return new Date().toLocaleTimeString();
   return 'Neznámý příkaz. Napište help.';
 }
+function escapeHtml(text) { return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
-function escapeHtml(text) {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initLogin); } else { initLogin(); }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initLogin);
-} else {
-  initLogin();
-}
