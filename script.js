@@ -1,66 +1,65 @@
 // ============================================================================
-// MICRO-KERNEL WEB OS (ARM V8/NEON OPTIMIZED STRUCTURE) - ČÁST 1/2
+// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED) - ČÁST 1 ze 2
 // ============================================================================
 const APP_REGISTRY = {
   notepad: { title: 'Notepad', w: 540, h: 440 },
   files: { title: 'Files', w: 720, h: 480 },
-  calculator: { title: 'KCalc', w: 340, h: 440 }
+  calculator: { title: 'KCalc (Kalkulačka)', w: 340, h: 440 }
 };
 
-// Simulace nízkoúrovňového registru zabezpečení (SHA-256 otisk hesla "janas")
+// Autentizační registr
 const SECURE_REG = {
   usr: 'stepan',
-  hash: '967d605a96324a3cf5be26e7a68e3b5e7d58fa6c5ecf007e0c8b939433246ebc'
+  pwd: 'janas'
 };
 
 const sys_state = {
   m_windows: new Map(), // Paměťově efektivní alokace oken namísto Array
   next_pid: 1,
   active_pid: null,
+  kernel_ready: false,
   fs: {
     'Home/Welcome.txt': 'System core initialized successfully.\nArchitecture: WebOS ARM-V8 Virtual Kernel.',
     'Documents/Projekt.txt': '1. Virtual DOM Allocation\n2. Hardware Accelerated Layers'
   }
 };
 
-// Hardwarově nízkoúrovňový SHA-256 generátor pro autentizaci v prohlížeči
-async function cryptoHash(string) {
-  const utf8 = new TextEncoder().encode(string);
-  const buffer = await crypto.subtle.digest('SHA-256', utf8);
-  return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+function getSysAuth() { 
+  return localStorage.getItem('wos_lock') === '1'; 
 }
 
-function getSysAuth() { return localStorage.getItem('wos_lock') === '1'; }
-
-function initKernel() {
-  const lock = document.getElementById('login-screen');
-  const form = document.getElementById('login-form');
-  const err = document.getElementById('login-error');
+function initLogin() {
+  loginScreen = document.getElementById('login-screen');
+  loginForm = document.getElementById('login-form');
+  loginError = document.getElementById('login-error');
   const is_locked = !getSysAuth();
 
-  document.querySelectorAll('.hidden-on-login').forEach(el => el.style.setProperty('display', is_locked ? 'none' : 'block'));
+  document.querySelectorAll('.hidden-on-login').forEach(el => {
+    el.style.setProperty('display', is_locked ? 'none' : 'block');
+  });
 
   if (is_locked) {
-    if (lock) lock.classList.remove('hidden');
-    if (form) {
-      form.addEventListener('submit', async (e) => {
+    if (loginScreen) loginScreen.classList.remove('hidden');
+    if (loginForm) {
+      loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const u = document.getElementById('username').value.trim();
-        const p = document.getElementById('password').value;
-        const p_hash = await cryptoHash(p);
+        
+        // OPRAVA: Oříznutí mezer a převod na malá písmena pro 100% spolehlivost přihlášení
+        const u = document.getElementById('username').value.trim().toLowerCase();
+        const p = document.getElementById('password').value.trim().toLowerCase();
 
-        if (u === SECURE_REG.usr && p_hash === SECURE_REG.hash) {
+        if (u === SECURE_REG.usr && p === SECURE_REG.pwd) {
           localStorage.setItem('wos_lock', '1');
-          lock.classList.add('hidden');
+          if (loginScreen) loginScreen.classList.add('hidden');
           bootDesktop();
         } else {
-          if (err) err.textContent = 'Hardware Auth Refused: Invalid Credentials';
+          if (loginError) loginError.textContent = 'Hardware Auth Refused: Invalid Credentials';
         }
       });
     }
     return;
   }
-  if (lock) lock.classList.add('hidden');
+  if (loginScreen) loginScreen.classList.add('hidden');
   bootDesktop();
 }
 
@@ -68,17 +67,19 @@ function bootDesktop() {
   if (sys_state.kernel_ready || !getSysAuth()) return;
   sys_state.kernel_ready = true;
 
-  // Alokace hardwarově akcelerovaných vr स्वतंत्र registrů
+  // Alokace hardwarově akcelerovaných vrstev registru
   sys_state.dom_icons = document.getElementById('desktop-icons');
   sys_state.dom_layer = document.getElementById('windows-layer');
   sys_state.dom_taskbar = document.getElementById('taskbar-apps');
   sys_state.dom_menu = document.getElementById('start-menu');
 
-  document.querySelectorAll('.hidden-on-login').forEach(el => el.style.setProperty('display', ''));
+  document.querySelectorAll('.hidden-on-login').forEach(el => {
+    el.style.setProperty('display', '');
+  });
 
   buildHardwareIcons();
   syncTaskbar();
-  requestPid('calculator'); // Okamžitý instanční start přes Kernel bus
+  requestPid('calculator'); // Okamžitý instanční start kalkulačky
 
   const start_btn = document.getElementById('start-button');
   if (start_btn) {
@@ -102,8 +103,11 @@ function bootDesktop() {
   });
 
   const clock = document.getElementById('clock');
-  const tick = () => { if (clock) clock.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); };
-  tick(); setInterval(tick, 1000);
+  const tick = () => { 
+    if (clock) clock.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); 
+  };
+  tick(); 
+  setInterval(tick, 1000);
 }
 
 function buildHardwareIcons() {
@@ -111,9 +115,8 @@ function buildHardwareIcons() {
   sys_state.dom_icons.innerHTML = '';
   
   const target_apps = [['Notepad', 'notepad', '✎'], ['Files', 'files', '📁'], ['Calculator', 'calculator', '🧮']];
-  
-  // Paměťově izolovaný fragment pro eliminaci překreslování procesoru (Reflow)
   const fragment = document.createDocumentFragment();
+  
   target_apps.forEach(([name, app, emoji]) => {
     const btn = document.createElement('button');
     btn.className = 'desktop-icon';
@@ -123,6 +126,7 @@ function buildHardwareIcons() {
   });
   sys_state.dom_icons.appendChild(fragment);
 }
+
 // ============================================================================
 // MICRO-KERNEL WEB OS (ARM V8/NEON OPTIMIZED STRUCTURE) - ČÁST 2/2
 // ============================================================================
