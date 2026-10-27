@@ -1,19 +1,12 @@
-// ==========================================
-// 1. GLOBÁLNÍ METADATA A STAV SYSTÉMU KUBUNTU
-// ==========================================
+// ============================================================================
+// DÍL 1: CONFIG A STAV SYSTÉMU
+// ============================================================================
 const APP_META = {
-  dolphin: { title: 'Dolphin (Správce souborů)', width: 720, height: 460 },
-  kate: { title: 'Kate (Textový editor)', width: 550, height: 440 },
-  falkon: { title: 'Falkon (Webový prohlížeč)', width: 780, height: 520 },
-  konsole: { title: 'Konsole (Terminál)', width: 640, height: 420 },
-  kcalc: { title: 'KCalc (Kalkulačka)', width: 360, height: 440 },
-  discover: { title: 'Discover (Centrum softwaru)', width: 800, height: 550 },
-  steam: { title: 'Steam', width: 780, height: 520, isInstalledApp: true, url: 'https://steampowered.com' },
-  discord: { title: 'Discord', width: 780, height: 520, isInstalledApp: true, url: 'https://discord.com' },
-  spotify: { title: 'Spotify', width: 780, height: 520, isInstalledApp: true, url: 'https://spotify.com' },
-  vscode: { title: 'Visual Studio Code', width: 780, height: 520, isInstalledApp: true, url: 'https://visualstudio.com' },
-  gimp: { title: 'GIMP (Grafický editor)', width: 700, height: 480, isInstalledApp: true, isGimp: true },
-  vlc: { title: 'VLC Media Player', width: 500, height: 350, isInstalledApp: true, isVlc: true }
+  notepad: { title: 'Notepad', width: 520, height: 420 },
+  files: { title: 'Files', width: 700, height: 460 },
+  browser: { title: 'Browser', width: 760, height: 500 },
+  terminal: { title: 'Terminal', width: 620, height: 420 },
+  calculator: { title: 'Calculator', width: 360, height: 420 }
 };
 
 const LOGIN = {
@@ -21,31 +14,23 @@ const LOGIN = {
   password: 'janas'
 };
 
-const DISCOVER_APPS = [
-  { id: 'steam', name: 'Steam', category: 'Hry', icon: '🎮', desc: 'Platforma pro digitální distribuci her a hraní.' },
-  { id: 'discord', name: 'Discord', category: 'Internet', icon: '💬', desc: 'Chatovací platforma pro komunity a hráče.' },
-  { id: 'spotify', name: 'Spotify', category: 'Multimédia', icon: '🎵', desc: 'Streamovací služba pro hudbu a podcasty.' },
-  { id: 'vscode', name: 'VS Code', category: 'Vývoj', icon: '💻', desc: 'Pokročilý editor zdrojového kódu od Microsoftu.' },
-  { id: 'gimp', name: 'GIMP', category: 'Grafika', icon: '🎨', desc: 'GNU Image Manipulation Program pro úpravu fotografií.' },
-  { id: 'vlc', name: 'VLC Player', category: 'Multimédia', icon: '🟠', desc: 'Univerzální přehrávač video a audio souborů.' }
-];
-
 const state = {
   windows: [],
   nextId: 1,
   activeApp: null,
   browserUrl: 'https://example.com',
-  installedApps: ['steam'],
   fileSystem: {
-    'Home/Vítejte.txt': 'Vítejte v systému Kubuntu OS (KDE Plasma)!\n\nToto prostředí simuluje moderní Linux desktop.\n\n- Dolphin: Správce souborů\n- Kate: Pokročilý textový editor\n- Konsole: Linux terminál\n- Discover: Instalace aplikací z PC\n\nNainstalujte si další software přes centrum Discover!',
-    'Documents/Linux_Poznámky.txt': 'Základní příkazy pro Konsole:\n1. help - zobrazí nápovědu\n2. ls - vypíše soubory\n3. whoami - aktuální uživatel\n4. clear - vyčistí obrazovku',
-    'Pictures/Pozadí_Koncept.txt': 'KDE Plasma Wallpaper Concept\n- Breeze Dark téma\n- Neonově modré akcenty\n- Elegantní spodní panel'
+    'Home/Welcome.txt': 'Vítejte ve Web OS!\n\nToto je zjednodušený online desktopový pracovní prostor.\n\n- otevřete soubory\n- zapište poznámky\n- použijte kalkulačku\n- prozkoumejte terminál',
+    'Documents/Projekt.txt': 'Návrh Web OS\n\n1. UI desktopu\n2. Plocha pro aplikace\n3. Start menu\n4. Systémová lišta',
+    'Documents/Idea.md': '# Idea\n\nVytvořit jednoduchý online počítač pro práci v prohlížeči.',
+    'Pictures/Wallpapers.txt': 'Web OS wallpaper concept\n\n- neon modrá\n- tmavý design\n- elegantní taskbar'
   },
-  selectedFile: 'Home/Vítejte.txt',
+  selectedFile: 'Home/Welcome.txt',
   desktopReady: false,
   loggedIn: false
 };
 
+// Globální DOM elementy
 let desktopIcons;
 let windowsLayer;
 let taskbarApps;
@@ -55,9 +40,9 @@ let clock;
 let loginScreen;
 let loginForm;
 let loginError;
-// ==========================================
-// 2. MANAGEMENT PŘIHLÁŠENÍ A SDDM RELAY
-// ==========================================
+// ============================================================================
+// DÍL 2: MANAGEMENT PŘIHLÁŠENÍ A PLOCHY
+// ============================================================================
 function getAuthState() {
   return localStorage.getItem('web-os-auth') === 'true';
 }
@@ -105,9 +90,7 @@ function initLogin() {
   if (loginScreen) loginScreen.classList.add('hidden');
   initDesktop();
 }
-// ==========================================
-// 3. INICIALIZACE DESKTOPU A KDE PANELU
-// ==========================================
+
 function initDesktop() {
   if (state.desktopReady) return;
   if (!getAuthState()) return;
@@ -124,22 +107,17 @@ function initDesktop() {
 
   const desktopElems = document.querySelectorAll('.hidden-on-login');
   desktopElems.forEach((el) => {
-    el.classList.remove('hidden');
     el.style.display = '';
   });
 
   buildDesktopIcons();
   renderTaskbar();
-  openApp('dolphin');
+  openApp('files');
+  openApp('notepad');
 
   if (startButton) {
     startButton.addEventListener('click', () => {
-      if (startMenu) {
-        startMenu.classList.toggle('hidden');
-        if (!startMenu.classList.contains('hidden')) {
-          renderStartMenuContent();
-        }
-      }
+      if (startMenu) startMenu.classList.toggle('hidden');
     });
   }
 
@@ -149,80 +127,44 @@ function initDesktop() {
     }
   });
 
+  if (startMenu) {
+    startMenu.querySelectorAll('.menu-item').forEach((button) => {
+      button.addEventListener('click', () => {
+        const action = button.dataset.action;
+        if (action === 'logout') {
+          setAuthState(false);
+          state.desktopReady = false;
+          state.windows = [];
+          if (windowsLayer) windowsLayer.innerHTML = '';
+          if (taskbarApps) taskbarApps.innerHTML = '';
+          if (startMenu) startMenu.classList.add('hidden');
+          if (loginScreen) {
+            loginScreen.classList.remove('hidden');
+            const passEl = document.getElementById('password');
+            const userEl = document.getElementById('username');
+            if (passEl) passEl.value = '';
+            if (userEl) userEl.value = LOGIN.username;
+            if (loginError) loginError.textContent = '';
+          }
+          return;
+        }
+        openApp(button.dataset.app);
+        startMenu.classList.add('hidden');
+      });
+    });
+  }
+
   const savedNote = localStorage.getItem('web-os-note');
   if (savedNote) {
-    state.fileSystem['Home/Vítejte.txt'] = savedNote;
+    state.fileSystem['Home/Welcome.txt'] = savedNote;
   }
 
   updateClock();
   setInterval(updateClock, 1000);
 }
-
-function renderStartMenuContent() {
-  if (!startMenu) return;
-  
-  let menuHtml = `
-    <div class="start-menu-header">
-      <div class="start-menu-user">👤 ${LOGIN.username} (Kubuntu User)</div>
-    </div>
-    <div class="start-menu-content">
-      <div style="font-size:0.75rem; color:var(--muted); padding:4px 12px; font-weight:bold;">SYSTÉM</div>
-      <button class="menu-item" data-app="dolphin">📁 Dolphin (Správce souborů)</button>
-      <button class="menu-item" data-app="kate">✎ Kate (Textový editor)</button>
-      <button class="menu-item" data-app="falkon">🌐 Falkon (Prohlížeč)</button>
-      <button class="menu-item" data-app="konsole">⌨ Konsole (Terminál)</button>
-      <button class="menu-item" data-app="kcalc">🧮 KCalc (Kalkulačka)</button>
-      <button class="menu-item" data-app="discover">🛍 Discover (Centrum softwaru)</button>
-  `;
-
-  if (state.installedApps.length > 0) {
-    menuHtml += `<div style="font-size:0.75rem; color:var(--muted); padding:8px 12px 4px 12px; font-weight:bold;">NAINSTALOVANÉ (PC)</div>`;
-    state.installedApps.forEach(appId => {
-      const meta = APP_META[appId];
-      if (meta) {
-        const discoverItem = DISCOVER_APPS.find(d => d.id === appId);
-        const icon = discoverItem ? discoverItem.icon : '🚀';
-        menuHtml += `<button class="menu-item" data-app="${appId}">${icon} ${meta.title}</button>`;
-      }
-    });
-  }
-
-  menuHtml += `
-      <div style="border-top:1px solid rgba(0,0,0,0.2); margin-top:6px; padding-top:4px;">
-        <button class="menu-item" data-action="logout" style="color:var(--danger);">🚪 Odhlásit se</button>
-      </div>
-    </div>
-  `;
-
-  startMenu.innerHTML = menuHtml;
-
-  startMenu.querySelectorAll('.menu-item').forEach((button) => {
-    button.addEventListener('click', () => {
-      const action = button.dataset.action;
-      if (action === 'logout') {
-        setAuthState(false);
-        state.desktopReady = false;
-        state.windows = [];
-        if (windowsLayer) windowsLayer.innerHTML = '';
-        if (taskbarApps) taskbarApps.innerHTML = '';
-        if (startMenu) startMenu.classList.add('hidden');
-        if (loginScreen) {
-          loginScreen.classList.remove('hidden');
-          const passEl = document.getElementById('password');
-          if (passEl) passEl.value = '';
-          if (loginError) loginError.textContent = '';
-        }
-        initLogin();
-        return;
-      }
-      openApp(button.dataset.app);
-      startMenu.classList.add('hidden');
-    });
-  });
-}
-// ==========================================
-// 4. MANIPULACE S OKNY (BREEZE DESIGN)
-// ==========================================
+// ============================================================================
+// DÍL 3: SPRÁVA A PŘESOUVÁNÍ OKEN
+// ============================================================================
 function openApp(app) {
   if (!windowsLayer) return;
 
@@ -230,7 +172,7 @@ function openApp(app) {
   if (existing) {
     const element = document.getElementById(existing.id);
     if (element && existing.minimized) {
-      element.style.display = 'flex';
+      element.style.display = 'block';
       existing.minimized = false;
     }
     focusWindow(existing.id);
@@ -245,8 +187,8 @@ function openApp(app) {
     id,
     type: app,
     title: meta.title,
-    x: 80 + (state.windows.length * 28),
-    y: 60 + (state.windows.length * 22),
+    x: 100 + (state.windows.length * 28),
+    y: 80 + (state.windows.length * 22),
     width: meta.width,
     height: meta.height,
     z: state.windows.length + 10,
@@ -272,10 +214,10 @@ function maximizeWindow(id) {
     win.previousY = win.y;
     win.previousWidth = win.width;
     win.previousHeight = win.height;
-    element.style.left = '0px';
-    element.style.top = '0px';
-    element.style.width = '100vw';
-    element.style.height = 'calc(100vh - 46px)';
+    element.style.left = '12px';
+    element.style.top = '12px';
+    element.style.width = `calc(100vw - 24px)`;
+    element.style.height = `calc(100vh - 76px)`;
   } else {
     element.style.left = `${win.previousX || win.x}px`;
     element.style.top = `${win.previousY || win.y}px`;
@@ -337,7 +279,7 @@ function enableWindowDrag(element, win) {
   function onDrag(event) {
     if (win.maximized) return;
     win.x = Math.max(0, Math.min(event.clientX - offsetX, window.innerWidth - win.width));
-    win.y = Math.max(0, Math.min(event.clientY - offsetY, window.innerHeight - win.height - 46));
+    win.y = Math.max(0, Math.min(event.clientY - offsetY, window.innerHeight - win.height - 52));
     element.style.left = `${win.x}px`;
     element.style.top = `${win.y}px`;
   }
@@ -347,10 +289,9 @@ function enableWindowDrag(element, win) {
     element.removeEventListener('pointerup', stopDrag);
   }
 }
-
-// ==========================================
-// 5. VYKRESLOVÁNÍ SYSTÉMOVÝCH APLIKACÍ KUBUNTU
-// ==========================================
+// ============================================================================
+// DÍL 4: OBSAH OKEN - NOTEPAD, FILES, BROWSER
+// ============================================================================
 function renderWindow(win) {
   const wrapper = document.createElement('div');
   wrapper.className = 'window';
@@ -365,153 +306,97 @@ function renderWindow(win) {
     <div class="window-header">
       <div class="window-title">${win.title}</div>
       <div class="window-controls">
-        <button class="control-btn minimize" data-action="minimize" data-id="${win.id}">−</button>
-        <button class="control-btn maximize" data-action="maximize" data-id="${win.id}">⬜</button>
-        <button class="control-btn close" data-action="close" data-id="${win.id}">×</button>
+        <button class="control-btn minimize" data-action="minimize" data-id="${win.id}" aria-label="Minimize"></button>
+        <button class="control-btn maximize" data-action="maximize" data-id="${win.id}" aria-label="Maximize"></button>
+        <button class="control-btn close" data-action="close" data-id="${win.id}" aria-label="Close"></button>
       </div>
     </div>
     <div class="window-content"></div>
   `;
 
-  const meta = APP_META[win.type];
-  const content = wrapper.querySelector('.window-content');
-
-  if (win.type === 'discover') {
-    let listHtml = `
-      <div class="app-content" style="display:flex; flex-direction:column; height:100%; padding:0;">
-        <div style="background:#2a2e32; padding:12px; font-weight:bold; border-bottom:1px solid rgba(0,0,0,0.2); font-size:1.1rem; color:var(--accent);">🛍 Discover Software Center</div>
-        <div style="flex:1; overflow:auto; padding:14px; display:flex; flex-direction:column; gap:10px;">
-    `;
-
-    DISCOVER_APPS.forEach(app => {
-      const isInstalled = state.installedApps.includes(app.id);
-      listHtml += `
-        <div style="background:#232629; border:1px solid rgba(255,255,255,0.05); padding:12px; border-radius:4px; display:flex; align-items:center; justify-content:space-between; gap:14px;">
-          <div style="font-size:2rem; background:#1b1e20; width:50px; height:50px; display:grid; place-items:center; border-radius:4px;">${app.icon}</div>
-          <div style="flex:1;">
-            <div style="font-weight:bold; font-size:0.95rem;">${app.name} <span style="font-size:0.75rem; color:var(--accent); background:rgba(61,174,233,0.1); padding:2px 6px; border-radius:10px; margin-left:4px;">${app.category}</span></div>
-            <div style="font-size:0.8rem; color:var(--muted); margin-top:2px;">${app.desc}</div>
-          </div>
-          <div>
-            <button class="primary-btn discover-btn" data-app-id="${app.id}" style="background:${isInstalled ? 'var(--danger)' : 'var(--accent)'}; width:100px;">
-              ${isInstalled ? 'Odinstalovat' : 'Instalovat'}
-            </button>
-          </div>
-        </div>
-      `;
-    });
-
-    listHtml += `</div></div>`;
-    content.innerHTML = listHtml;
-
-    content.querySelectorAll('.discover-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const appId = btn.dataset.appId;
-        if (state.installedApps.includes(appId)) {
-          state.installedApps = state.installedApps.filter(id => id !== appId);
-          showToast(`Aplikace ${APP_META[appId].title} byla odstraněna.`);
-        } else {
-          state.installedApps.push(appId);
-          showToast(`Aplikace ${APP_META[appId].title} byla úspěšně nainstalována!`);
-        }
-        buildDesktopIcons();
-        renderWindow(win);
-      });
-    });
-  }
-
-  else if (win.type === 'kate') {
+  // --- NOTEPAD ---
+  if (win.type === 'notepad') {
+    const content = wrapper.querySelector('.window-content');
     content.innerHTML = `
       <div class="app-content notepad-content">
-        <textarea id="note-${win.id}" class="notepad-editor">${state.fileSystem['Home/Vítejte.txt'] || ''}</textarea>
+        <textarea id="note-${win.id}" class="notepad-editor">${state.fileSystem['Home/Welcome.txt'] || ''}</textarea>
         <div class="secondary-bar">
-          <button class="secondary-btn" type="button" data-save="${win.id}">Uložit soubor (Ctrl+S)</button>
+          <button class="secondary-btn" type="button" data-save="${win.id}">Uložit</button>
         </div>
       </div>
     `;
     const textarea = document.getElementById(`note-${win.id}`);
     if (textarea) {
       textarea.addEventListener('input', () => {
-        state.fileSystem['Home/Vítejte.txt'] = textarea.value;
+        state.fileSystem['Home/Welcome.txt'] = textarea.value;
       });
     }
     const saveButton = content.querySelector(`[data-save="${win.id}"]`);
     if (saveButton && textarea) {
       saveButton.addEventListener('click', () => {
         localStorage.setItem('web-os-note', textarea.value);
-        showToast('Soubor uložen do Home/');
+        showToast('Poznámka uložena');
       });
     }
   }
 
-  else if (win.type === 'dolphin') {
-    content.innerHTML = `
+  // --- FILES ---
+  if (win.type === 'files') {
+    wrapper.querySelector('.window-content').innerHTML = `
       <div class="app-content files-content">
         <div class="files-layout">
           <div class="file-list">
-            <div style="font-size:0.75rem; color:var(--muted); font-weight:bold; margin-bottom:6px; padding-left:6px;">MÍSTA</div>
             <ul id="file-list-${win.id}"></ul>
           </div>
           <div class="file-preview">
-            <h4 id="file-name-${win.id}" style="margin:0 0 10px 0; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:6px; color:var(--accent);"></h4>
-            <pre id="file-content-${win.id}" style="margin:0; font-size:0.85rem; line-height:1.5; white-space:pre-wrap;"></pre>
+            <h3 id="file-name-${win.id}"></h3>
+            <pre id="file-content-${win.id}"></pre>
           </div>
         </div>
       </div>
     `;
     renderFileExplorer(win.id);
   }
-  else if (meta && (win.type === 'falkon' || meta.isInstalledApp)) {
-    const initialUrl = meta.url || state.browserUrl;
-    
-    let internalPageHtml = ``;
-    if (meta.isGimp) {
-      internalPageHtml = `<div style="text-align:center; padding-top:40px;"><h2>🎨 GIMP GNU Image Manipulation</h2><p style="color:var(--muted)">Grafické plátno připraveno k úpravám.</p><div style="border:2px dashed rgba(255,255,255,0.1); width:80%; height:180px; margin:20px auto; display:grid; place-items:center; color:var(--muted)">[ Sem přetáhněte obrázek z PC ]</div></div>`;
-    } else if (meta.isVlc) {
-      internalPageHtml = `<div style="text-align:center; padding-top:30px;"><h2>🟠 VLC Media Player</h2><div style="background:black; width:90%; height:160px; margin:14px auto; display:grid; place-items:center; color:var(--muted)">▶ Žádné médium nebylo načteno</div><p style="font-size:0.8rem;">Otevřít stream nebo lokální disk...</p></div>`;
-    } else {
-      internalPageHtml = `<div id="browser-page-${win.id}" class="browser-page"><h2>Vítejte ve Falkon Browseru</h2><p>Bezpečný prohlížeč pro prostředí KDE Plasma.</p></div>`;
-    }
 
-    content.innerHTML = `
+  // --- BROWSER ---
+  if (win.type === 'browser') {
+    wrapper.querySelector('.window-content').innerHTML = `
       <div class="app-content browser-content">
         <div class="browser-bar">
-          <input id="browser-url-${win.id}" value="${initialUrl}" ${meta.isInstalledApp ? 'disabled' : ''} />
-          <button class="primary-btn" type="button" data-browser-go="${win.id}" ${meta.isInstalledApp ? 'disabled' : ''}>Přejít</button>
+          <input id="browser-url-${win.id}" value="${state.browserUrl}" />
+          <button class="primary-btn" type="button" data-browser-go="${win.id}">Go</button>
         </div>
-        <div style="flex:1; background:#232629; overflow:auto; border:1px solid rgba(255,255,255,0.05); border-radius:4px;" id="browser-viewport-${win.id}">
-          ${internalPageHtml}
+        <div class="browser-page" id="browser-page-${win.id}">
+          <h2>Vítejte ve Web Browseru</h2>
+          <p>Prozkoumejte stránky v rámci virtuálního OS.</p>
         </div>
       </div>
     `;
-
     const input = document.getElementById(`browser-url-${win.id}`);
-    const viewport = document.getElementById(`browser-viewport-${win.id}`);
+    const page = document.getElementById(`browser-page-${win.id}`);
     const go = wrapper.querySelector('[data-browser-go]');
-
-    if (go && input && viewport && !meta.isInstalledApp) {
+    if (go && input && page) {
       go.addEventListener('click', () => {
         const url = input.value.trim();
         if (!url) return;
         state.browserUrl = url;
         const target = url.startsWith('http') ? url : `https://${url}`;
-        viewport.innerHTML = `<div style="padding:14px;"><h2>${target}</h2><p>Načítání obsahu skrze Linux proxy...</p></div>`;
+        page.innerHTML = `<h2>${target}</h2><p>Načítání obsahu...</p>`;
         fetch(`https://jina.ai{target.replace(/^https?:\/\//, '')}`)
           .then((res) => res.text())
-          .then((text) => { viewport.innerHTML = `<div style="padding:14px;"><h2>${target}</h2><pre style="white-space:pre-wrap; font-size:0.85rem;">${escapeHtml(text.slice(0, 4000))}</pre></div>`; })
-          .catch(() => { viewport.innerHTML = `<div style="padding:14px;"><h2>${target}</h2><p>Sandbox prohlížeče běží, ale vzdálený server odmítl připojení (CORS restriction).</p></div>`; });
+          .then((text) => { page.innerHTML = `<h2>${target}</h2><pre>${escapeHtml(text.slice(0, 4000))}</pre>`; })
+          .catch(() => { page.innerHTML = `<h2>${target}</h2><p>Nepodařilo se načíst obsah.</p>`; });
       });
     }
   }
-
-  else if (win.type === 'konsole') {
-    content.innerHTML = `
+  // --- TERMINAL ---
+  if (win.type === 'terminal') {
+    wrapper.querySelector('.window-content').innerHTML = `
       <div class="app-content terminal-content">
-        <div class="terminal-output" id="terminal-output-${win.id}">kubuntu@kde-plasma:~$ welcome\nSystem Linux core built successfully. Type 'help' for commands.</div>
+        <div class="terminal-output" id="terminal-output-${win.id}">web-os$ welcome\nSystem ready. Type 'help'.</div>
         <div class="terminal-input">
-          <span style="color:#3daee9; font-weight:bold; padding-left:4px;">kubuntu$:</span>
-          <input id="terminal-input-${win.id}" autofocus />
-          <button class="primary-btn" type="button" data-terminal-run="${win.id}">Run</button>
+          <input id="terminal-input-${win.id}" placeholder="zadejte příkaz..." />
+          <button class="primary-btn" type="button" data-terminal-run="${win.id}">Spustit</button>
         </div>
       </div>
     `;
@@ -522,7 +407,7 @@ function renderWindow(win) {
       if (!input || !output) return;
       const command = input.value.trim();
       if (!command) return;
-      output.textContent += `\nkubuntu@kde-plasma:~$ ${command}`;
+      output.textContent += `\nweb-os$ ${command}`;
       input.value = '';
       const result = handleTerminalCommand(command, win.id);
       if (result) output.textContent += `\n${result}`;
@@ -532,8 +417,9 @@ function renderWindow(win) {
     if (runBtn) runBtn.addEventListener('click', runCommand);
   }
 
-  else if (win.type === 'kcalc') {
-    content.innerHTML = `
+  // --- CALCULATOR ---
+  if (win.type === 'calculator') {
+    wrapper.querySelector('.window-content').innerHTML = `
       <div class="app-content calculator-content">
         <div class="calc-screen" id="calc-screen-${win.id}">0</div>
         <div class="calculator-grid">
@@ -541,35 +427,44 @@ function renderWindow(win) {
           <button class="calc-key operator" data-value="/">/</button>
           <button class="calc-key operator" data-value="*">×</button>
           <button class="calc-key operator" data-value="DEL">DEL</button>
-          <button class="calc-key" data-value="7">7</button><button class="calc-key" data-value="8">8</button><button class="calc-key" data-value="9">9</button>
+          <button class="calc-key" data-value="7">7</button>
+          <button class="calc-key" data-value="8">8</button>
+          <button class="calc-key" data-value="9">9</button>
           <button class="calc-key operator" data-value="-">−</button>
-          <button class="calc-key" data-value="4">4</button><button class="calc-key" data-value="5">5</button><button class="calc-key" data-value="6">6</button>
+          <button class="calc-key" data-value="4">4</button>
+          <button class="calc-key" data-value="5">5</button>
+          <button class="calc-key" data-value="6">6</button>
           <button class="calc-key operator" data-value="+">+</button>
-          <button class="calc-key" data-value="1">1</button><button class="calc-key" data-value="2">2</button><button class="calc-key" data-value="3">3</button>
+          <button class="calc-key" data-value="1">1</button>
+          <button class="calc-key" data-value="2">2</button>
+          <button class="calc-key" data-value="3">3</button>
           <button class="calc-key equals" data-value="=">=</button>
           <button class="calc-key" data-value="0" style="grid-column: span 3;">0</button>
           <button class="calc-key" data-value=".">.</button>
         </div>
       </div>
     `;
+
     const screen = document.getElementById(`calc-screen-${win.id}`);
     let expr = ''; let disp = '0';
-    wrapper.querySelectorAll('.calc-key').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const val = btn.dataset.value;
-        if (!val) return;
-        if (val === 'C') { expr = ''; disp = '0'; }
-        else if (val === 'DEL') { expr = expr.slice(0, -1); disp = expr || '0'; }
-        else if (val === '=') {
-          try { disp = String(Function(`"use strict"; return (${expr || '0'})`)()); expr = disp; }
-          catch { disp = 'Error'; expr = ''; }
-        } else {
-          if (expr === '0' && val !== '.') { expr = val; }
-          else { expr += val; }
-          disp = expr;
-        }
-        if (screen) screen.textContent = disp;
-      });
+    
+    wrapper.addEventListener('click', (event) => {
+      const btn = event.target.closest('.calc-key');
+      if (!btn) return;
+      const val = btn.dataset.value;
+      if (!val) return;
+
+      if (val === 'C') { expr = ''; disp = '0'; }
+      else if (val === 'DEL') { expr = expr.slice(0, -1); disp = expr || '0'; }
+      else if (val === '=') {
+        try { disp = String(Function(`"use strict"; return (${expr || '0'})`)()); expr = disp; }
+        catch { disp = 'Error'; expr = ''; }
+      } else {
+        if (expr === '0' && val !== '.') { expr = val; }
+        else { expr += val; }
+        disp = expr;
+      }
+      if (screen) screen.textContent = disp;
     });
   }
 
@@ -585,9 +480,8 @@ function renderWindow(win) {
   enableWindowDrag(wrapper, win);
   if (windowsLayer) windowsLayer.appendChild(wrapper);
 }
-// ==========================================
-// 6. SYSTÉMOVÉ UTILITY, HODINY A DISK-LOADER
-// ==========================================
+
+// --- SYSTÉMOVÉ UTILITY ---
 function updateClock() {
   if (!clock) return;
   const now = new Date();
@@ -602,7 +496,7 @@ function showToast(msg) {
   setTimeout(() => {
     toast.classList.remove('visible');
     setTimeout(() => toast.remove(), 220);
-  }, 2200);
+  }, 1500);
 }
 
 function desktopIcon(name, app, emoji) {
@@ -618,18 +512,11 @@ function desktopIcon(name, app, emoji) {
 function buildDesktopIcons() {
   if (!desktopIcons) return;
   desktopIcons.innerHTML = '';
-  
-  desktopIcon('Dolphin', 'dolphin', '📁');
-  desktopIcon('Kate Editor', 'kate', '📝');
-  desktopIcon('Discover', 'discover', '🛍');
-  
-  state.installedApps.forEach(appId => {
-    const meta = APP_META[appId];
-    const discoverItem = DISCOVER_APPS.find(d => d.id === appId);
-    if (meta && discoverItem) {
-      desktopIcon(meta.title, appId, discoverItem.icon);
-    }
-  });
+  desktopIcon('Notepad', 'notepad', '✎');
+  desktopIcon('Files', 'files', '📁');
+  desktopIcon('Browser', 'browser', '🌐');
+  desktopIcon('Terminal', 'terminal', '⌨');
+  desktopIcon('Calculator', 'calculator', '🧮');
 }
 
 function renderTaskbar() {
@@ -638,10 +525,10 @@ function renderTaskbar() {
   state.windows.forEach((win) => {
     const btn = document.createElement('button');
     btn.className = `taskbar-item ${state.activeApp === win.id ? 'active' : ''}`;
-    btn.textContent = win.title.split(' ');
+    btn.textContent = win.title;
     btn.addEventListener('click', () => {
       const el = document.getElementById(win.id);
-      if (el && win.minimized) { el.style.display = 'flex'; win.minimized = false; }
+      if (el && win.minimized) { el.style.display = 'block'; win.minimized = false; }
       focusWindow(win.id);
     });
     taskbarApps.appendChild(btn);
@@ -657,38 +544,40 @@ function renderFileExplorer(id) {
   Object.keys(state.fileSystem).forEach((path) => {
     const li = document.createElement('li');
     const btn = document.createElement('button');
-    btn.textContent = "📄 " + path.split('/'); btn.type = 'button';
+    btn.textContent = path; btn.type = 'button';
     if (path === state.selectedFile) btn.classList.add('active');
     btn.addEventListener('click', () => { state.selectedFile = path; renderFileExplorer(id); });
     li.appendChild(btn); list.appendChild(li);
   });
-  if (fileName) fileName.textContent = "Dolphin :: " + state.selectedFile;
+  if (fileName) fileName.textContent = state.selectedFile;
   if (content) content.textContent = state.fileSystem[state.selectedFile] || '';
 }
 
 function handleTerminalCommand(command, id) {
   const lower = command.toLowerCase().trim();
-  if (lower === 'help') return 'Dostupné Linux příkazy: help, ls, open [dolphin/kate/discover/kcalc], neofetch, clear, whoami, clock';
+  if (lower === 'help') return 'Dostupné: help, ls, open [notes/files/browser/calculator], clear, whoami, clock';
   if (lower === 'ls') return Object.keys(state.fileSystem).join('\n');
-  if (lower === 'neofetch') {
-    return `   ./o.o\\.     OS: Kubuntu Web-OS 2026\n  /eeeeee\\    Kernel: Javascript DOM-Engine\n /eeeeeeee\\   Uptime: ${Math.round(performance.now()/1000)}s\n \\eeeeeeee/   Shell: Bash simulation\n  \\eeeeee/    DE: KDE Plasma 6.0\n   \`\\o.o/\`     WM: KWin`;
-  }
   if (lower.startsWith('open ')) {
     const app = lower.replace('open ', '').trim();
-    if (APP_META[app]) { openApp(app); return `Aplikace ${app} byla spuštěna.`; }
-    return 'Balíček nenalezen. Zkuste ho nainstalovat v Discoveru.';
+    if (app === 'notes' || app === 'notepad') { openApp('notepad'); return 'Notepad otevřen.'; }
+    if (app === 'files') { openApp('files'); return 'Files otevřeny.'; }
+    if (app === 'browser') { openApp('browser'); return 'Browser otevřen.'; }
+    if (app === 'calculator') { openApp('calculator'); return 'Kalkulačka otevřena.'; }
+    return 'Neznámá aplikace.';
   }
   if (lower === 'clear') {
     const out = document.getElementById(`terminal-output-${id}`);
-    if (out) out.textContent = 'kubuntu@kde-plasma:~$ Vyčištěno.';
+    if (out) out.textContent = 'web-os$ welcome\nSystem ready.';
     return '';
   }
-  if (lower === 'whoami') return state.loggedIn ? LOGIN.username : 'guest';
+  if (lower === 'whoami') return 'stepan';
   if (lower === 'clock') return new Date().toLocaleTimeString();
-  return `bash: ${command}: příkaz nenalezen. Seznam získáte napsáním 'help'.`;
+  return 'Neznámý příkaz. Napište help.';
 }
 
-function escapeHtml(text) { return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function escapeHtml(text) {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initLogin);
