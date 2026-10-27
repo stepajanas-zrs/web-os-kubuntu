@@ -1,6 +1,13 @@
 // ============================================================================
 // KERNEL OS - DÍL A: GLOBÁLNÍ REGISTRY A MANAGEMENT PLOCHY
 // ============================================================================
+// Přidejte 'textbook' položku do vašeho registru na začátku Dílu A/B:
+const APP_REGISTRY = {
+  notepad: { title: 'Notepad', w: 540, h: 440 },
+  files: { title: 'Files', w: 720, h: 480 },
+  calculator: { title: 'KCalc (Kalkulačka)', w: 340, h: 440 },
+  textbook: { title: 'Učebnice a slovníky', w: 680, h: 500 } // Nová aplikace
+};
 const APP_REGISTRY = {
   notepad: { title: 'Notepad', w: 540, h: 440 },
   files: { title: 'Files', w: 720, h: 480 },
