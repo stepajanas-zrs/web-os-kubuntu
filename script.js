@@ -205,6 +205,7 @@ function allocateRenderLayer(win) {
 
   const content = node.querySelector('.window-content');
   
+  // --- 1. KALKULAČKA ---
   if (win.type === 'calculator') {
     content.innerHTML = `
       <div class="app-content calculator-content" style="gap:6px; overflow-y:auto;">
@@ -225,17 +226,20 @@ function allocateRenderLayer(win) {
         </div>
         <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:2px 0;">🌌 Fyzikální konstanty</div>
         <div class="calculator-grid" style="grid-template-columns: repeat(4, 1fr); grid-template-rows: 34px; flex:none; gap:5px;">
-          <button class="calc-key operator" data-v="3.14159265">π</button><button class="calc-key operator" data-v="2.71828182">e</button><button class="calc-key operator" data-v="9.81">g</button><button class="calc-key operator" data-v="299792458">c</button>
+          <button class="calc-key operator" data-v="3.14159265">π</button><button class="calc-key operator" data-v="2.71828182">e</button>
+          <button class="calc-key operator" data-v="9.81">g</button><button class="calc-key operator" data-v="299792458">c</button>
         </div>
       </div>`;
   }
 
+  // --- 2. NOTEPAD ---
   if (win.type === 'notepad') {
     content.innerHTML = `<div class="app-content calculator-content"><textarea class="notepad-editor" id="txt-${win.id}" style="width:100%;height:calc(100% - 40px);">${sys_state.fs['Home/Welcome.txt']}</textarea><div class="secondary-bar"><button class="primary-btn" id="save-${win.id}">Uložit soubor</button></div></div>`;
     const area = document.getElementById(`txt-${win.id}`); const sBtn = document.getElementById(`save-${win.id}`);
     if (sBtn && area) { sBtn.addEventListener('click', () => { sys_state.fs['Home/Welcome.txt'] = area.value; localStorage.setItem('web-os-note', area.value); }); }
   }
 
+  // --- 3. FILES ---
   if (win.type === 'files') {
     content.innerHTML = `<div class="app-content"><div class="files-layout"><div class="file-list"><ul id="ul-${win.id}"></ul></div><div class="file-preview"><pre id="pre-${win.id}"></pre></div></div></div>`;
     const renderExplorer = () => {
@@ -249,14 +253,15 @@ function allocateRenderLayer(win) {
     renderExplorer();
   }
 
+  // --- 4. UČEBNICE (OPRAVENO PRO TABULKY) ---
   if (win.type === 'textbook') {
     content.innerHTML = `
       <div class="app-content" style="padding:0; height:100%;">
         <div class="files-layout" style="grid-template-columns: 180px 1fr; height:100%; gap:0;">
           <div class="file-list" style="border-radius:0; border:none; border-right:1px solid var(--panel-border); padding:12px; display:flex; flex-direction:column; gap:8px;">
-            <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); margin-bottom:4px; letter-spacing:0.5px;">MOJE PŘEDMĚTY</div>
-            <button class="subject-tab" data-subject="en_vocab">🇬🇧 Anglický jazyk</button>
-            <button class="subject-tab" data-subject="math">📐 Matematika</button>
+            <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); margin-bottom:4px; letter-spacing:0.5px;">KATEGORIE</div>
+            <button class="subject-tab active" data-subject="en_vocab">🇬🇧 Anglický slovníček</button>
+            <button class="subject-tab" data-subject="useful_tables">📊 Převodní tabulky</button>
           </div>
           <div class="textbook-view-zone" style="padding:16px; height:100%; overflow:hidden;">
             <p style="color:var(--text-muted);">Načítám knihovnu...</p>
@@ -265,8 +270,12 @@ function allocateRenderLayer(win) {
       </div>`;
   }
 
-  // Volání vícenásobné bezpečné registrace z Části 3
   registerAndSpawn(node, win);
 }
 
-if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initLogin); } else { initLogin(); }
+// Inicializační listener DOMu
+if (document.readyState === 'loading') { 
+  document.addEventListener('DOMContentLoaded', initLogin); 
+} else { 
+  initLogin(); 
+}
