@@ -111,7 +111,7 @@ function buildHardwareIcons() {
   sys_state.dom_icons.appendChild(fragment);
 }
 // ============================================================================
-// KERNEL OS - DÍL B: PROCESY, RENDERER OKEN A HARDWAROVÁ AKCELERACE
+// KERNEL OS - DÍL B: PROCESY, RENDERER OKEN A HARDWAROVÁ AKCELERACE (ZÁVORKY)
 // ============================================================================
 function requestPid(app_type) {
   if (!sys_state.dom_layer) return;
@@ -126,7 +126,7 @@ function requestPid(app_type) {
   const win_obj = {
     id: pid, type: app_type, title: meta.title,
     x: 120 + (sys_state.m_windows.size * 30), y: 90 + (sys_state.m_windows.size * 25),
-    w: app_type === 'calculator' ? 420 : meta.w, h: app_type === 'calculator' ? 560 : meta.h, minimized: false
+    w: app_type === 'calculator' ? 440 : meta.w, h: app_type === 'calculator' ? 570 : meta.h, minimized: false
   };
   allocateRenderLayer(win_obj);
 }
@@ -156,13 +156,17 @@ function allocateRenderLayer(win) {
           <button class="calc-key" data-v="0" style="grid-column: span 2;">0</button><button class="calc-key" data-v=".">.</button>
         </div>
         <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:2px 0;">🔬 Vědecké funkce</div>
-        <div class="calculator-grid" style="grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 34px); flex:none; gap:5px; margin-bottom:4px;">
-          <button class="calc-key operator" data-sci="sqrt">√</button><button class="calc-key operator" data-sci="sq2">x²</button><button class="calc-key operator" data-sci="sq3">x³</button><button class="calc-key operator" data-sci="log">log</button>
-          <button class="calc-key operator" data-sci="sin">sin</button><button class="calc-key operator" data-sci="cos">cos</button><button class="calc-key operator" data-sci="tan">tan</button><button class="calc-key operator" data-sci="ln">ln</button>
+        <!-- OPRAVA: Rozšířeno na 5 sloupců pro integraci závorek ( a ) -->
+        <div class="calculator-grid" style="grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(2, 34px); flex:none; gap:5px; margin-bottom:4px;">
+          <button class="calc-key operator" data-v="(">(</button><button class="calc-key operator" data-v=")">)</button>
+          <button class="calc-key operator" data-sci="sqrt">√</button><button class="calc-key operator" data-sci="sq2">x²</button><button class="calc-key operator" data-sci="sq3">x³</button>
+          <button class="calc-key operator" data-sci="sin">sin</button><button class="calc-key operator" data-sci="cos">cos</button>
+          <button class="calc-key operator" data-sci="tan">tan</button><button class="calc-key operator" data-sci="log">log</button><button class="calc-key operator" data-sci="ln">ln</button>
         </div>
         <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:2px 0;">🌌 Fyzikální konstanty</div>
         <div class="calculator-grid" style="grid-template-columns: repeat(4, 1fr); grid-template-rows: 34px; flex:none; gap:5px;">
-          <button class="calc-key operator" data-v="3.14159265">π</button><button class="calc-key operator" data-v="2.71828182">e</button><button class="calc-key operator" data-v="9.81">g</button><button class="calc-key operator" data-v="299792458">c</button>
+          <button class="calc-key operator" data-v="3.14159265">π</button><button class="calc-key operator" data-v="2.71828182">e</button>
+          <button class="calc-key operator" data-v="9.81">g</button><button class="calc-key operator" data-v="299792458">c</button>
         </div>
       </div>`;
   }
@@ -239,3 +243,4 @@ function syncTaskbar() {
 }
 
 if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initLogin); } else { initLogin(); }
+
