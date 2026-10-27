@@ -128,7 +128,7 @@ function buildHardwareIcons() {
 }
 
 // ============================================================================
-// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED) - ČÁST 2 ze 2 (APLIKACE A REAGOVÁNÍ)
+// MICRO-KERNEL WEB OS - ČÁST 2A (PROCESS ALLOCATION & SCIENTIFIC UI)
 // ============================================================================
 function requestPid(app_type) {
   if (!sys_state.dom_layer) return;
@@ -143,7 +143,7 @@ function requestPid(app_type) {
   const win_obj = {
     id: pid, type: app_type, title: meta.title,
     x: 120 + (sys_state.m_windows.size * 30), y: 90 + (sys_state.m_windows.size * 25),
-    w: meta.w, h: meta.h, minimized: false
+    w: app_type === 'calculator' ? 420 : meta.w, h: app_type === 'calculator' ? 560 : meta.h, minimized: false
   };
   allocateRenderLayer(win_obj);
 }
@@ -155,83 +155,87 @@ function allocateRenderLayer(win) {
   node.style.setProperty('transform', `translate3d(${win.x}px, ${win.y}px, 0px)`);
 
   node.innerHTML = `
-    <div class="window-header">
-      <div class="window-title">${win.title}</div>
+    <div class="window-header"><div class="window-title">${win.title}</div>
       <div class="window-controls">
-        <button class="control-btn minimize" data-pid="${win.id}" aria-label="Minimalizovat"></button>
-        <button class="control-btn close" data-pid="${win.id}" aria-label="Zavřít"></button>
+        <button class="control-btn minimize" data-pid="${win.id}"></button>
+        <button class="control-btn close" data-pid="${win.id}"></button>
       </div>
-    </div>
-    <div class="window-content"></div>
+    </div><div class="window-content"></div>
   `;
-
   const content = node.querySelector('.window-content');
   
-  // --- 1. KALKULAČKA (OPRAVENO: Stoprocentní čtení data-v atributů) ---
   if (win.type === 'calculator') {
     content.innerHTML = `
-      <div class="app-content calculator-content">
+      <div class="app-content calculator-content" style="gap:6px; overflow-y:auto;">
         <div class="calc-screen" id="sc-${win.id}">0</div>
-        <div class="calculator-grid">
-          <button class="calc-key operator" data-v="C">C</button>
-          <button class="calc-key operator" data-v="/">/</button>
-          <button class="calc-key operator" data-v="*">×</button>
-          <button class="calc-key operator" data-v="DEL">DEL</button>
+        <div class="calculator-grid" style="grid-template-rows: repeat(5, 38px); flex:none; margin-bottom:4px;">
+          <button class="calc-key operator" data-v="C">C</button><button class="calc-key operator" data-v="/">/</button>
+          <button class="calc-key operator" data-v="*">×</button><button class="calc-key operator" data-v="DEL">⌫</button>
           <button class="calc-key" data-v="7">7</button><button class="calc-key" data-v="8">8</button><button class="calc-key" data-v="9">9</button>
-          <button class="calc-key operator" data-v="-">−</button>
-          <button class="calc-key" data-v="4">4</button><button class="calc-key" data-v="5">5</button><button class="calc-key" data-v="6">6</button>
-          <button class="calc-key operator" data-v="+">+</button>
+          <button class="calc-key operator" data-v="-">−</button><button class="calc-key" data-v="4">4</button>
+          <button class="calc-key" data-v="5">5</button><button class="calc-key" data-v="6">6</button><button class="calc-key" data-v="+">+</button>
           <button class="calc-key" data-v="1">1</button><button class="calc-key" data-v="2">2</button><button class="calc-key" data-v="3">3</button>
-          <button class="calc-key equals" data-v="=">=</button>
-          <button class="calc-key" data-v="0" style="grid-column: span 3;">0</button><button class="calc-key" data-v=".">.</button>
+          <button class="calc-key equals" data-v="=" style="grid-row: span 2; height:100%;">=</button>
+          <button class="calc-key" data-v="0" style="grid-column: span 2;">0</button><button class="calc-key" data-v=".">.</button>
+        </div>
+        <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:2px 0;">🔬 Vědecké funkce</div>
+        <div class="calculator-grid" style="grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 34px); flex:none; gap:5px; margin-bottom:4px;">
+          <button class="calc-key operator" data-sci="sqrt">√</button><button class="calc-key operator" data-sci="sq2">x²</button>
+          <button class="calc-key operator" data-sci="sq3">x³</button><button class="calc-key operator" data-sci="log">log</button>
+          <button class="calc-key operator" data-sci="sin">sin</button><button class="calc-key operator" data-sci="cos">cos</button>
+          <button class="calc-key operator" data-sci="tan">tan</button><button class="calc-key operator" data-sci="ln">ln</button>
+        </div>
+        <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:2px 0;">🌌 Fyzikální konstanty</div>
+        <div class="calculator-grid" style="grid-template-columns: repeat(4, 1fr); grid-template-rows: 34px; flex:none; gap:5px;">
+          <button class="calc-key operator" data-v="3.14159265">π</button><button class="calc-key operator" data-v="2.71828182">e</button>
+          <button class="calc-key operator" data-v="9.81">g</button><button class="calc-key operator" data-v="299792458">c</button>
         </div>
       </div>`;
     const scr = document.getElementById(`sc-${win.id}`); let buffer = '';
     node.addEventListener('click', (e) => {
       const btn = e.target.closest('.calc-key'); if (!btn) return;
-      const v = btn.getAttribute('data-v'); if (!v) return; // OPRAVA: Přímé čtení HTML atributu data-v
-      if (v === 'C') buffer = '';
-      else if (v === 'DEL') buffer = buffer.slice(0, -1);
-      else if (v === '=') { try { buffer = String(Function(`"use strict"; return (${buffer || '0'})`)()); } catch { buffer = 'Error'; } }
-      else { if (buffer === '0' && v !== '.') buffer = v; else buffer += v; }
+      const v = btn.getAttribute('data-v'); const sci = btn.getAttribute('data-sci');
+      if (v) {
+        if (v === 'C') buffer = '';
+        else if (v === 'DEL') buffer = buffer.slice(0, -1);
+        else if (v === '=') { try { buffer = String(Function(`"use strict"; return (${buffer || '0'})`)()); } catch { buffer = 'Error'; } }
+        else { if (buffer === '0' && v !== '.') buffer = v; else buffer += v; }
+      } else if (sci) {
+        try {
+          let cur = parseFloat(buffer) || 0;
+          if (sci === 'sqrt') buffer = String(Math.sqrt(cur));
+          if (sci === 'sq2') buffer = String(Math.pow(cur, 2));
+          if (sci === 'sq3') buffer = String(Math.pow(cur, 3));
+          if (sci === 'log') buffer = String(Math.log10(cur));
+          if (sci === 'ln') buffer = String(Math.log(cur));
+          if (sci === 'sin') buffer = String(Math.sin(cur * Math.PI / 180));
+          if (sci === 'cos') buffer = String(Math.cos(cur * Math.PI / 180));
+          if (sci === 'tan') buffer = String(Math.tan(cur * Math.PI / 180));
+        } catch { buffer = 'Error'; }
+      }
       if (scr) scr.textContent = buffer || '0';
     });
   }
-
-  // --- 2. NOTEPAD (PLNÁ FUNKČNOST: Automatické ukládání změn do RAM FS) ---
+// ============================================================================
+// MICRO-KERNEL WEB OS - ČÁST 2B (SUBSYSTEMS, HARDWARE DRAG & OS BOOT)
+// ============================================================================
   if (win.type === 'notepad') {
     content.innerHTML = `
       <div class="app-content calculator-content">
         <textarea class="notepad-editor" id="txt-${win.id}" style="width:100%;height:calc(100% - 40px);">${sys_state.fs['Home/Welcome.txt']}</textarea>
         <div class="secondary-bar"><button class="primary-btn" id="save-${win.id}">Uložit soubor</button></div>
       </div>`;
-    const area = document.getElementById(`txt-${win.id}`);
-    const sBtn = document.getElementById(`save-${win.id}`);
-    if (sBtn && area) {
-      sBtn.addEventListener('click', () => {
-        sys_state.fs['Home/Welcome.txt'] = area.value; // Zápis do sdíleného souborového registru
-        localStorage.setItem('web-os-note', area.value); // Trvalá záloha v prohlížeči
-      });
-    }
+    const area = document.getElementById(`txt-${win.id}`); const sBtn = document.getElementById(`save-${win.id}`);
+    if (sBtn && area) { sBtn.addEventListener('click', () => { sys_state.fs['Home/Welcome.txt'] = area.value; localStorage.setItem('web-os-note', area.value); }); }
   }
 
-  // --- 3. FILES (PLNÁ FUNKČNOST: Klikací strom se čtením souborů) ---
   if (win.type === 'files') {
-    content.innerHTML = `
-      <div class="app-content"><div class="files-layout">
-        <div class="file-list"><ul id="ul-${win.id}"></ul></div>
-        <div class="file-preview"><pre id="pre-${win.id}"></pre></div>
-      </div></div>`;
+    content.innerHTML = `<div class="app-content"><div class="files-layout"><div class="file-list"><ul id="ul-${win.id}"></ul></div><div class="file-preview"><pre id="pre-${win.id}"></pre></div></div></div>`;
     const renderExplorer = () => {
-      const ul = document.getElementById(`ul-${win.id}`);
-      const pre = document.getElementById(`pre-${win.id}`);
-      if (!ul || !pre) return; ul.innerHTML = '';
+      const ul = document.getElementById(`ul-${win.id}`); const pre = document.getElementById(`pre-${win.id}`); if (!ul || !pre) return; ul.innerHTML = '';
       Object.keys(sys_state.fs).forEach(path => {
-        const li = document.createElement('li');
-        const btn = document.createElement('button'); btn.textContent = path;
-        if (path === sys_state.selectedFile) btn.className = 'active';
-        btn.addEventListener('click', () => { sys_state.selectedFile = path; renderExplorer(); });
-        li.appendChild(btn); ul.appendChild(li);
+        const li = document.createElement('li'); const btn = document.createElement('button'); btn.textContent = path; if (path === sys_state.selectedFile) btn.className = 'active';
+        btn.addEventListener('click', () => { sys_state.selectedFile = path; renderExplorer(); }); li.appendChild(btn); ul.appendChild(li);
       });
       pre.textContent = sys_state.fs[sys_state.selectedFile] || '';
     };
@@ -285,4 +289,4 @@ function syncTaskbar() {
   sys_state.dom_taskbar.appendChild(frag);
 }
 
-if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initKernel); } else { initKernel(); }
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initLogin); } else { initLogin(); }
