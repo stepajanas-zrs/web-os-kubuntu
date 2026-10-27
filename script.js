@@ -1,7 +1,6 @@
 // ==========================================
 // 1. GLOBÁLNÍ METADATA A STAV SYSTÉMU KUBUNTU
 // ==========================================
-// Spuštěné aplikace v systému
 const APP_META = {
   dolphin: { title: 'Dolphin (Správce souborů)', width: 720, height: 460 },
   kate: { title: 'Kate (Textový editor)', width: 550, height: 440 },
@@ -9,7 +8,6 @@ const APP_META = {
   konsole: { title: 'Konsole (Terminál)', width: 640, height: 420 },
   kcalc: { title: 'KCalc (Kalkulačka)', width: 360, height: 440 },
   discover: { title: 'Discover (Centrum softwaru)', width: 800, height: 550 },
-  // Dynamicky instalované aplikace (otevírají se ve Falkon prohlížeči nebo vlastním okně)
   steam: { title: 'Steam', width: 780, height: 520, isInstalledApp: true, url: 'https://steampowered.com' },
   discord: { title: 'Discord', width: 780, height: 520, isInstalledApp: true, url: 'https://discord.com' },
   spotify: { title: 'Spotify', width: 780, height: 520, isInstalledApp: true, url: 'https://spotify.com' },
@@ -23,7 +21,6 @@ const LOGIN = {
   password: 'janas'
 };
 
-// Katalog aplikací dostupných v obchodě Discover
 const DISCOVER_APPS = [
   { id: 'steam', name: 'Steam', category: 'Hry', icon: '🎮', desc: 'Platforma pro digitální distribuci her a hraní.' },
   { id: 'discord', name: 'Discord', category: 'Internet', icon: '💬', desc: 'Chatovací platforma pro komunity a hráče.' },
@@ -38,7 +35,7 @@ const state = {
   nextId: 1,
   activeApp: null,
   browserUrl: 'https://example.com',
-  installedApps: ['steam'], // Steam je nainstalován hned na začátku jako ukázka
+  installedApps: ['steam'],
   fileSystem: {
     'Home/Vítejte.txt': 'Vítejte v systému Kubuntu OS (KDE Plasma)!\n\nToto prostředí simuluje moderní Linux desktop.\n\n- Dolphin: Správce souborů\n- Kate: Pokročilý textový editor\n- Konsole: Linux terminál\n- Discover: Instalace aplikací z PC\n\nNainstalujte si další software přes centrum Discover!',
     'Documents/Linux_Poznámky.txt': 'Základní příkazy pro Konsole:\n1. help - zobrazí nápovědu\n2. ls - vypíše soubory\n3. whoami - aktuální uživatel\n4. clear - vyčistí obrazovku',
@@ -49,7 +46,6 @@ const state = {
   loggedIn: false
 };
 
-// Globální reference na elementy
 let desktopIcons;
 let windowsLayer;
 let taskbarApps;
@@ -60,7 +56,7 @@ let loginScreen;
 let loginForm;
 let loginError;
 // ==========================================
-// 2. MANAGEMENT PŘIHLÁŠENÍ A INICIALIZACE
+// 2. MANAGEMENT PŘIHLÁŠENÍ A SDDM RELAY
 // ==========================================
 function getAuthState() {
   return localStorage.getItem('web-os-auth') === 'true';
@@ -84,7 +80,7 @@ function initLogin() {
 
   if (shouldShowLogin) {
     if (loginScreen) loginScreen.classList.remove('hidden');
-
+    
     const usernameInput = document.getElementById('username');
     if (usernameInput) usernameInput.value = LOGIN.username;
 
@@ -128,6 +124,7 @@ function initDesktop() {
 
   const desktopElems = document.querySelectorAll('.hidden-on-login');
   desktopElems.forEach((el) => {
+    el.classList.remove('hidden');
     el.style.display = '';
   });
 
@@ -163,7 +160,7 @@ function initDesktop() {
 
 function renderStartMenuContent() {
   if (!startMenu) return;
-
+  
   let menuHtml = `
     <div class="start-menu-header">
       <div class="start-menu-user">👤 ${LOGIN.username} (Kubuntu User)</div>
@@ -178,7 +175,6 @@ function renderStartMenuContent() {
       <button class="menu-item" data-app="discover">🛍 Discover (Centrum softwaru)</button>
   `;
 
-  // Zobrazení nainstalovaných aplikací z PC v nabídce start
   if (state.installedApps.length > 0) {
     menuHtml += `<div style="font-size:0.75rem; color:var(--muted); padding:8px 12px 4px 12px; font-weight:bold;">NAINSTALOVANÉ (PC)</div>`;
     state.installedApps.forEach(appId => {
@@ -200,7 +196,6 @@ function renderStartMenuContent() {
 
   startMenu.innerHTML = menuHtml;
 
-  // Navázání událostí na nově vygenerované položky menu
   startMenu.querySelectorAll('.menu-item').forEach((button) => {
     button.addEventListener('click', () => {
       const action = button.dataset.action;
@@ -217,6 +212,7 @@ function renderStartMenuContent() {
           if (passEl) passEl.value = '';
           if (loginError) loginError.textContent = '';
         }
+        initLogin();
         return;
       }
       openApp(button.dataset.app);
@@ -351,8 +347,9 @@ function enableWindowDrag(element, win) {
     element.removeEventListener('pointerup', stopDrag);
   }
 }
+
 // ==========================================
-// 5A. RENDERER OBSAHU OKEN (DISCOVER, KATE)
+// 5. VYKRESLOVÁNÍ SYSTÉMOVÝCH APLIKACÍ KUBUNTU
 // ==========================================
 function renderWindow(win) {
   const wrapper = document.createElement('div');
@@ -379,7 +376,6 @@ function renderWindow(win) {
   const meta = APP_META[win.type];
   const content = wrapper.querySelector('.window-content');
 
-  // --- 🛍 SOFTWARE CENTER: DISCOVER ---
   if (win.type === 'discover') {
     let listHtml = `
       <div class="app-content" style="display:flex; flex-direction:column; height:100%; padding:0;">
@@ -424,7 +420,6 @@ function renderWindow(win) {
     });
   }
 
-  // --- ✎ TEXT EDITOR: KATE ---
   else if (win.type === 'kate') {
     content.innerHTML = `
       <div class="app-content notepad-content">
@@ -448,7 +443,7 @@ function renderWindow(win) {
       });
     }
   }
-  // --- 📁 FILE MANAGER: DOLPHIN ---
+
   else if (win.type === 'dolphin') {
     content.innerHTML = `
       <div class="app-content files-content">
@@ -466,16 +461,14 @@ function renderWindow(win) {
     `;
     renderFileExplorer(win.id);
   }
-
-  // --- 🌐 WEB WEB BROWSER: FALKON / SIMULOVANÁ APLIKACE ---
   else if (meta && (win.type === 'falkon' || meta.isInstalledApp)) {
     const initialUrl = meta.url || state.browserUrl;
-
+    
     let internalPageHtml = ``;
     if (meta.isGimp) {
       internalPageHtml = `<div style="text-align:center; padding-top:40px;"><h2>🎨 GIMP GNU Image Manipulation</h2><p style="color:var(--muted)">Grafické plátno připraveno k úpravám.</p><div style="border:2px dashed rgba(255,255,255,0.1); width:80%; height:180px; margin:20px auto; display:grid; place-items:center; color:var(--muted)">[ Sem přetáhněte obrázek z PC ]</div></div>`;
     } else if (meta.isVlc) {
-      internalPageHtml = `<div style="text-align:center; padding-top:30px;"><h2>🟠 VLC Media Player</h2><div style="background:black; width:90%; height:160px; margin:14px auto; display:grid; place-items:center; color:var(--muted)">▶ Ž難é médium nebylo načteno</div><p style="font-size:0.8rem;">Otevřít stream nebo lokální disk...</p></div>`;
+      internalPageHtml = `<div style="text-align:center; padding-top:30px;"><h2>🟠 VLC Media Player</h2><div style="background:black; width:90%; height:160px; margin:14px auto; display:grid; place-items:center; color:var(--muted)">▶ Žádné médium nebylo načteno</div><p style="font-size:0.8rem;">Otevřít stream nebo lokální disk...</p></div>`;
     } else {
       internalPageHtml = `<div id="browser-page-${win.id}" class="browser-page"><h2>Vítejte ve Falkon Browseru</h2><p>Bezpečný prohlížeč pro prostředí KDE Plasma.</p></div>`;
     }
@@ -510,7 +503,7 @@ function renderWindow(win) {
       });
     }
   }
-  // --- ⌨ TERMINAL: KONSOLE ---
+
   else if (win.type === 'konsole') {
     content.innerHTML = `
       <div class="app-content terminal-content">
@@ -539,7 +532,6 @@ function renderWindow(win) {
     if (runBtn) runBtn.addEventListener('click', runCommand);
   }
 
-  // --- 🧮 KALKULAČKA: KCALC ---
   else if (win.type === 'kcalc') {
     content.innerHTML = `
       <div class="app-content calculator-content">
@@ -581,7 +573,6 @@ function renderWindow(win) {
     });
   }
 
-  // Registrace systémového záhlaví a oken do vrstvy
   wrapper.addEventListener('pointerdown', () => focusWindow(win.id));
   wrapper.querySelectorAll('[data-action]').forEach((b) => {
     b.addEventListener('click', () => {
@@ -593,4 +584,114 @@ function renderWindow(win) {
   });
   enableWindowDrag(wrapper, win);
   if (windowsLayer) windowsLayer.appendChild(wrapper);
+}
+// ==========================================
+// 6. SYSTÉMOVÉ UTILITY, HODINY A DISK-LOADER
+// ==========================================
+function updateClock() {
+  if (!clock) return;
+  const now = new Date();
+  clock.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function showToast(msg) {
+  const toast = document.createElement('div');
+  toast.className = 'toast visible';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.remove('visible');
+    setTimeout(() => toast.remove(), 220);
+  }, 2200);
+}
+
+function desktopIcon(name, app, emoji) {
+  if (!desktopIcons) return;
+  const el = document.createElement('button');
+  el.className = 'desktop-icon';
+  el.type = 'button';
+  el.innerHTML = `<div class="icon">${emoji}</div><div class="label">${name}</div>`;
+  el.addEventListener('click', () => openApp(app));
+  desktopIcons.appendChild(el);
+}
+
+function buildDesktopIcons() {
+  if (!desktopIcons) return;
+  desktopIcons.innerHTML = '';
+  
+  desktopIcon('Dolphin', 'dolphin', '📁');
+  desktopIcon('Kate Editor', 'kate', '📝');
+  desktopIcon('Discover', 'discover', '🛍');
+  
+  state.installedApps.forEach(appId => {
+    const meta = APP_META[appId];
+    const discoverItem = DISCOVER_APPS.find(d => d.id === appId);
+    if (meta && discoverItem) {
+      desktopIcon(meta.title, appId, discoverItem.icon);
+    }
+  });
+}
+
+function renderTaskbar() {
+  if (!taskbarApps) return;
+  taskbarApps.innerHTML = '';
+  state.windows.forEach((win) => {
+    const btn = document.createElement('button');
+    btn.className = `taskbar-item ${state.activeApp === win.id ? 'active' : ''}`;
+    btn.textContent = win.title.split(' ');
+    btn.addEventListener('click', () => {
+      const el = document.getElementById(win.id);
+      if (el && win.minimized) { el.style.display = 'flex'; win.minimized = false; }
+      focusWindow(win.id);
+    });
+    taskbarApps.appendChild(btn);
+  });
+}
+
+function renderFileExplorer(id) {
+  const list = document.getElementById(`file-list-${id}`);
+  const fileName = document.getElementById(`file-name-${id}`);
+  const content = document.getElementById(`file-content-${id}`);
+  if (!list) return;
+  list.innerHTML = '';
+  Object.keys(state.fileSystem).forEach((path) => {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.textContent = "📄 " + path.split('/'); btn.type = 'button';
+    if (path === state.selectedFile) btn.classList.add('active');
+    btn.addEventListener('click', () => { state.selectedFile = path; renderFileExplorer(id); });
+    li.appendChild(btn); list.appendChild(li);
+  });
+  if (fileName) fileName.textContent = "Dolphin :: " + state.selectedFile;
+  if (content) content.textContent = state.fileSystem[state.selectedFile] || '';
+}
+
+function handleTerminalCommand(command, id) {
+  const lower = command.toLowerCase().trim();
+  if (lower === 'help') return 'Dostupné Linux příkazy: help, ls, open [dolphin/kate/discover/kcalc], neofetch, clear, whoami, clock';
+  if (lower === 'ls') return Object.keys(state.fileSystem).join('\n');
+  if (lower === 'neofetch') {
+    return `   ./o.o\\.     OS: Kubuntu Web-OS 2026\n  /eeeeee\\    Kernel: Javascript DOM-Engine\n /eeeeeeee\\   Uptime: ${Math.round(performance.now()/1000)}s\n \\eeeeeeee/   Shell: Bash simulation\n  \\eeeeee/    DE: KDE Plasma 6.0\n   \`\\o.o/\`     WM: KWin`;
+  }
+  if (lower.startsWith('open ')) {
+    const app = lower.replace('open ', '').trim();
+    if (APP_META[app]) { openApp(app); return `Aplikace ${app} byla spuštěna.`; }
+    return 'Balíček nenalezen. Zkuste ho nainstalovat v Discoveru.';
+  }
+  if (lower === 'clear') {
+    const out = document.getElementById(`terminal-output-${id}`);
+    if (out) out.textContent = 'kubuntu@kde-plasma:~$ Vyčištěno.';
+    return '';
+  }
+  if (lower === 'whoami') return state.loggedIn ? LOGIN.username : 'guest';
+  if (lower === 'clock') return new Date().toLocaleTimeString();
+  return `bash: ${command}: příkaz nenalezen. Seznam získáte napsáním 'help'.`;
+}
+
+function escapeHtml(text) { return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initLogin);
+} else {
+  initLogin();
 }
