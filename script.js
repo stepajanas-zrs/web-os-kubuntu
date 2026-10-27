@@ -118,13 +118,16 @@ function buildHardwareIcons() {
   sys_state.dom_icons.appendChild(fragment);
 }
 // ============================================================================
-// KERNEL OS - DÍL B: PROCESY, RENDERER OKEN A HARDWAROVÁ AKCELERACE (ZÁVORKY)
+// KERNEL OS - DÍL B1: PROCESY A ŠABLONY OKEN (MAX 90 ŘÁDKŮ)
 // ============================================================================
 function requestPid(app_type) {
   if (!sys_state.dom_layer) return;
   for (let [pid, win] of sys_state.m_windows) {
     if (win.type === app_type) {
-      if (win.minimized) { win.node.style.setProperty('display', 'flex'); win.minimized = false; }
+      if (win.minimized) {
+        win.node.style.setProperty('display', 'flex');
+        win.minimized = false;
+      }
       switchFocus(pid); return;
     }
   }
@@ -133,7 +136,9 @@ function requestPid(app_type) {
   const win_obj = {
     id: pid, type: app_type, title: meta.title,
     x: 120 + (sys_state.m_windows.size * 30), y: 90 + (sys_state.m_windows.size * 25),
-    w: app_type === 'calculator' ? 440 : meta.w, h: app_type === 'calculator' ? 570 : meta.h, minimized: false
+    w: app_type === 'calculator' ? 440 : (app_type === 'textbook' ? 680 : meta.w), 
+    h: app_type === 'calculator' ? 570 : (app_type === 'textbook' ? 500 : meta.h), 
+    minimized: false
   };
   allocateRenderLayer(win_obj);
 }
@@ -163,7 +168,6 @@ function allocateRenderLayer(win) {
           <button class="calc-key" data-v="0" style="grid-column: span 2;">0</button><button class="calc-key" data-v=".">.</button>
         </div>
         <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:2px 0;">🔬 Vědecké funkce</div>
-        <!-- OPRAVA: Rozšířeno na 5 sloupců pro integraci závorek ( a ) -->
         <div class="calculator-grid" style="grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(2, 34px); flex:none; gap:5px; margin-bottom:4px;">
           <button class="calc-key operator" data-v="(">(</button><button class="calc-key operator" data-v=")">)</button>
           <button class="calc-key operator" data-sci="sqrt">√</button><button class="calc-key operator" data-sci="sq2">x²</button><button class="calc-key operator" data-sci="sq3">x³</button>
@@ -197,7 +201,30 @@ function allocateRenderLayer(win) {
     renderExplorer();
   }
 
-  win.node = node; sys_state.m_windows.set(win.id, win);
+  if (win.type === 'textbook') {
+    content.innerHTML = `
+      <div class="app-content" style="padding:0; height:100%;">
+        <div class="files-layout" style="grid-template-columns: 180px 1fr; height:100%; gap:0;">
+          <div class="file-list" style="border-radius:0; border:none; border-right:1px solid var(--panel-border); padding:12px; display:flex; flex-direction:column; gap:8px;">
+            <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); margin-bottom:4px; letter-spacing:0.5px;">MOJE PŘEDMĚTY</div>
+            <button class="subject-tab" data-subject="en_vocab">🇬🇧 Anglický jazyk</button>
+            <button class="subject-tab" data-subject="math">📐 Matematika</button>
+          </div>
+          <div class="textbook-view-zone" style="padding:16px; height:100%; overflow:hidden;">
+            <p style="color:var(--text-muted);">Načítám knihovnu...</p>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // Pokračování správy oken se předává dalšímu dílu
+  registerAndSpawn(node, win);
+}
+// ============================================================================
+// KERNEL OS - DÍL B2: REGESTRACE OKEN, HARDWARE DRAG A TASKBAR (MAX 95 ŘÁDKŮ)
+// ============================================================================
+function registerAndSpawn(node, win) {
+  sys_state.m_windows.set(win.id, win);
   node.addEventListener('pointerdown', () => switchFocus(win.id));
   node.querySelectorAll('.control-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -207,11 +234,12 @@ function allocateRenderLayer(win) {
       syncTaskbar();
     });
   });
+
   bindHardwareDrag(node, win); sys_state.dom_layer.appendChild(node);
   
-  if (win.type === 'calculator' && window.initScientificCalculator) {
-    window.initScientificCalculator(win.id, node);
-  }
+  // Bezpečné volání izolovaných aplikací až po usazení do DOMu
+  if (win.type === 'calculator' && window.initScientificCalculator) window.initScientificCalculator(win.id, node);
+  if (win.type === 'textbook' && window.initTextbookApp) window.initTextbookApp(win.id, node);
 
   setTimeout(() => node.classList.add('window-open'), 10); switchFocus(win.id);
 }
@@ -249,5 +277,6 @@ function syncTaskbar() {
   sys_state.dom_taskbar.appendChild(frag);
 }
 
+// Spuštění inicializační sekvence jádra
 if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initLogin); } else { initLogin(); }
 
