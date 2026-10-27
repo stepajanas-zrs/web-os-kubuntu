@@ -3,95 +3,69 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Web OS - Kubuntu Style</title>
+  <title>Professional Web OS</title>
   <link rel="stylesheet" href="styles.css">
-  <!-- Načtení skriptu s atributem defer, aby se DOM načetl jako první -->
   <script src="script.js" defer></script>
 </head>
 <body>
 
-  <!-- 1. PŘIHLAŠOVACÍ OBRAZOVKA (V CSS dostane display: none po přidání třídy .hidden) -->
+  <!-- SYSTÉMOVÝ LOCK SCREEN -->
   <div id="login-screen" class="hidden">
     <form id="login-form">
-      <h2>Přihlášení do Web OS</h2>
+      <h2>Vítejte zpět</h2>
       <div id="login-error"></div>
-      <div>
-        <label for="username">Uživatelské jméno:</label>
+      
+      <div class="input-group">
+        <label for="username">Uživatel</label>
         <input type="text" id="username" autocomplete="username" required>
       </div>
-      <div>
-        <label for="password">Heslo:</label>
+      
+      <div class="input-group">
+        <label for="password">Heslo</label>
         <input type="password" id="password" autocomplete="current-password" required>
       </div>
-      <button class="primary-btn" type="submit">Přihlásit se</button>
+      
+      <button class="primary-btn" type="submit" style="margin-top: 10px; padding: 12px;">Přihlásit se</button>
     </form>
   </div>
 
-  <!-- MAIN DESKTOP PROSTŘEDÍ -->
+  <!-- PLOCHA SYSTÉMU -->
   <div class="desktop hidden-on-login">
     
-    <!-- 2. IKONY NA PLOŠE (Plní se dynamicky z JavaScriptu) -->
+    <!-- Dynamické ikony na ploše -->
     <div id="desktop-icons" class="desktop-icons"></div>
 
-    <!-- 3. VRSTVA PRO OKNA APLIKACÍ (Zde se otevírají programy) -->
+    <!-- Aktivní aplikační vrstva oken -->
     <div id="windows-layer" class="windows-layer"></div>
 
-    <!-- 4. NABÍDKA START (Skrytá, dokud se neklikne na logo) -->
+    <!-- Panel nabídky Start -->
     <div id="start-menu" class="start-menu hidden">
-      <button class="menu-item" type="button" data-app="notepad">✎ Notepad</button>
-      <button class="menu-item" type="button" data-app="files">📁 Files (Soubory)</button>
-      <button class="menu-item" type="button" data-app="browser">🌐 Browser (Prohlížeč)</button>
-      <button class="menu-item" type="button" data-app="terminal">⌨ Terminal</button>
-      <button class="menu-item" type="button" data-app="calculator">🧮 Calculator</button>
-      <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.08); margin: 6px 0;">
+      <button class="menu-item" type="button" data-app="notepad">✎ Poznámkový blok</button>
+      <button class="menu-item" type="button" data-app="files">📁 Správce souborů</button>
+      <button class="menu-item" type="button" data-app="browser">🌐 Webový prohlížeč</button>
+      <button class="menu-item" type="button" data-app="terminal">⌨ Systémový terminál</button>
+      <button class="menu-item" type="button" data-app="calculator">🧮 Vědecká kalkulačka</button>
+      <hr style="border: 0; border-top: 1px solid var(--panel-border); margin: 6px 0;">
       <button class="menu-item" type="button" data-action="logout" style="color: var(--danger);">🔒 Odhlásit se</button>
     </div>
 
   </div>
-  <!-- 5. SPODNÍ SYSTÉMOVÁ LIŠTA (TASKBAR) -->
+
+  <!-- HLAVNÍ SYSTEMOVÁ LIŠTA (DOCK) -->
   <footer class="taskbar hidden-on-login">
-    
-    <!-- Modré startovací tlačítko (K-Menu logo) -->
-    <button id="start-button" class="start-button" type="button" aria-label="Nabídka Start">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="color: #60a5fa; display: block;">
-        <circle cx="12" cy="12" r="10" fill="rgba(96, 165, 250, 0.2)"/>
-        <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm-1 14.5v-9l6 4.5z"/>
+    <button id="start-button" class="start-button" type="button" aria-label="Start">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="color: #3b82f6;">
+        <circle cx="12" cy="12" r="10" fill="rgba(59, 130, 246, 0.2)" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M12 7v10M7 12h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
       </svg>
     </button>
 
-    <!-- Aktivní běžící aplikace na liště (Plní se z JS) -->
     <div id="taskbar-apps" class="taskbar-apps"></div>
 
-    <!-- Systémová část (Hodiny a oznamovací oblast) -->
     <div class="tray">
-      <div id="clock" class="clock">00:00</div>
+      <div id="clock">00:00</div>
     </div>
-
   </footer>
-
-  <!-- Šablona skryté kalkulačky v HTML pro případ, že by ji skript nevygeneroval dynamicky -->
-  <div style="display: none;">
-    <div class="calculator-grid">
-      <button class="calc-key operator" data-value="C">C</button>
-      <button class="calc-key operator" data-value="/">/</button>
-      <button class="calc-key operator" data-value="*">×</button>
-      <button class="calc-key operator" data-value="DEL">DEL</button>
-      <button class="calc-key" data-value="7">7</button>
-      <button class="calc-key" data-value="8">8</button>
-      <button class="calc-key" data-value="9">9</button>
-      <button class="calc-key operator" data-value="-">−</button>
-      <button class="calc-key" data-value="4">4</button>
-      <button class="calc-key" data-value="5">5</button>
-      <button class="calc-key" data-value="6">6</button>
-      <button class="calc-key operator" data-value="+">+</button>
-      <button class="calc-key" data-value="1">1</button>
-      <button class="calc-key" data-value="2">2</button>
-      <button class="calc-key" data-value="3">3</button>
-      <button class="calc-key equals" data-value="=">=</button>
-      <button class="calc-key" data-value="0">0</button>
-      <button class="calc-key" data-value=".">.</button>
-    </div>
-  </div>
 
 </body>
 </html>
