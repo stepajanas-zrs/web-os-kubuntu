@@ -33,7 +33,7 @@ const sys_state = {
   }
 };
 // ============================================================================
-// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 2 ze 4 (FIXED AUTH SMYČKA)
+// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 2 ze 4
 // ============================================================================
 function getAuthState() { return localStorage.getItem('web-os-auth') === 'true'; }
 function setAuthState(value) { localStorage.setItem('web-os-auth', value ? 'true' : 'false'); }
@@ -117,8 +117,6 @@ function bootDesktop() {
   }
   updateClock(); setInterval(updateClock, 1000);
 }
-
-}
 // ============================================================================
 // MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 3 ze 4
 // ============================================================================
@@ -146,6 +144,7 @@ function switchFocus(pid) {
   renderTaskbar();
 }
 
+// ARM optimalizace: Plynulé přesouvání oken tahem myši bez lagování
 function bindHardwareDrag(element, win) {
   const header = element.querySelector('.window-header'); if (!header) return;
   let ox = 0, oy = 0;
@@ -175,15 +174,15 @@ function registerAndSpawn(node, win) {
   setTimeout(() => node.classList.add('window-open'), 10); renderTaskbar(); switchFocus(win.id);
 }
 
-function updateClock() { if (clock) clock.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
 function renderTaskbar() {
   if (!taskbarApps) return; taskbarApps.innerHTML = '';
   for (let [id, win] of sys_state.m_windows) {
     const btn = document.createElement('button'); btn.className = `taskbar-item ${sys_state.active_pid === id ? 'active' : ''}`;
     btn.textContent = win.title; btn.addEventListener('click', () => { if (win.minimized) { win.node.style.display = 'flex'; win.minimized = false; } switchFocus(id); });
-    taskbarApps.appendChild(btn);
+    frag.appendChild(btn);
   }
 }
+
 // ============================================================================
 // MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 4 ze 4
 // ============================================================================
