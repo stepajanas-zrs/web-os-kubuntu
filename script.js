@@ -128,7 +128,7 @@ function buildHardwareIcons() {
 }
 
 // ============================================================================
-// MICRO-KERNEL WEB OS - ČÁST 2A (PROCESS ALLOCATION & SCIENTIFIC UI)
+// MICRO-KERNEL WEB OS - ČÁST 2 ze 2 (MODULAR LAYER)
 // ============================================================================
 function requestPid(app_type) {
   if (!sys_state.dom_layer) return;
@@ -164,6 +164,7 @@ function allocateRenderLayer(win) {
   `;
   const content = node.querySelector('.window-content');
   
+  // --- 1. KALKULAČKA (JÁDRO POUZE VYSTAVÍ GRAFIKU) ---
   if (win.type === 'calculator') {
     content.innerHTML = `
       <div class="app-content calculator-content" style="gap:6px; overflow-y:auto;">
@@ -191,40 +192,15 @@ function allocateRenderLayer(win) {
           <button class="calc-key operator" data-v="9.81">g</button><button class="calc-key operator" data-v="299792458">c</button>
         </div>
       </div>`;
-    const scr = document.getElementById(`sc-${win.id}`); let buffer = '';
-    node.addEventListener('click', (e) => {
-      const btn = e.target.closest('.calc-key'); if (!btn) return;
-      const v = btn.getAttribute('data-v'); const sci = btn.getAttribute('data-sci');
-      if (v) {
-        if (v === 'C') buffer = '';
-        else if (v === 'DEL') buffer = buffer.slice(0, -1);
-        else if (v === '=') { try { buffer = String(Function(`"use strict"; return (${buffer || '0'})`)()); } catch { buffer = 'Error'; } }
-        else { if (buffer === '0' && v !== '.') buffer = v; else buffer += v; }
-      } else if (sci) {
-        try {
-          let cur = parseFloat(buffer) || 0;
-          if (sci === 'sqrt') buffer = String(Math.sqrt(cur));
-          if (sci === 'sq2') buffer = String(Math.pow(cur, 2));
-          if (sci === 'sq3') buffer = String(Math.pow(cur, 3));
-          if (sci === 'log') buffer = String(Math.log10(cur));
-          if (sci === 'ln') buffer = String(Math.log(cur));
-          if (sci === 'sin') buffer = String(Math.sin(cur * Math.PI / 180));
-          if (sci === 'cos') buffer = String(Math.cos(cur * Math.PI / 180));
-          if (sci === 'tan') buffer = String(Math.tan(cur * Math.PI / 180));
-        } catch { buffer = 'Error'; }
-      }
-      if (scr) scr.textContent = buffer || '0';
-    });
+    
+    // DELEGACE: Aktivace izolovaného modulu kalkulačky z externího souboru
+    if (window.initScientificCalculator) {
+      window.initScientificCalculator(win.id, node);
+    }
   }
-// ============================================================================
-// MICRO-KERNEL WEB OS - ČÁST 2B (SUBSYSTEMS, HARDWARE DRAG & OS BOOT)
-// ============================================================================
+
   if (win.type === 'notepad') {
-    content.innerHTML = `
-      <div class="app-content calculator-content">
-        <textarea class="notepad-editor" id="txt-${win.id}" style="width:100%;height:calc(100% - 40px);">${sys_state.fs['Home/Welcome.txt']}</textarea>
-        <div class="secondary-bar"><button class="primary-btn" id="save-${win.id}">Uložit soubor</button></div>
-      </div>`;
+    content.innerHTML = `<div class="app-content calculator-content"><textarea class="notepad-editor" id="txt-${win.id}" style="width:100%;height:calc(100% - 40px);">${sys_state.fs['Home/Welcome.txt']}</textarea><div class="secondary-bar"><button class="primary-btn" id="save-${win.id}">Uložit soubor</button></div></div>`;
     const area = document.getElementById(`txt-${win.id}`); const sBtn = document.getElementById(`save-${win.id}`);
     if (sBtn && area) { sBtn.addEventListener('click', () => { sys_state.fs['Home/Welcome.txt'] = area.value; localStorage.setItem('web-os-note', area.value); }); }
   }
