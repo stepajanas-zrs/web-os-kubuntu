@@ -1,5 +1,5 @@
 // ============================================================================
-// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED) - ČÁST 1 ze 2
+// KERNEL OS - DÍL A: GLOBÁLNÍ REGISTRY A MANAGEMENT PLOCHY
 // ============================================================================
 const APP_REGISTRY = {
   notepad: { title: 'Notepad', w: 540, h: 440 },
@@ -7,22 +7,21 @@ const APP_REGISTRY = {
   calculator: { title: 'KCalc (Kalkulačka)', w: 340, h: 440 }
 };
 
-// Autentizační registr
-const SECURE_REG = {
-  usr: 'stepan',
-  pwd: 'janas'
-};
+const SECURE_REG = { usr: 'stepan', pwd: 'janas' };
 
 const sys_state = {
-  m_windows: new Map(), // Paměťově efektivní alokace oken namísto Array
+  m_windows: new Map(),
   next_pid: 1,
   active_pid: null,
   kernel_ready: false,
   fs: {
     'Home/Welcome.txt': 'System core initialized successfully.\nArchitecture: WebOS ARM-V8 Virtual Kernel.',
     'Documents/Projekt.txt': '1. Virtual DOM Allocation\n2. Hardware Accelerated Layers'
-  }
+  },
+  selectedFile: 'Home/Welcome.txt'
 };
+
+let loginScreen, loginForm, loginError;
 
 function getSysAuth() { 
   return localStorage.getItem('wos_lock') === '1'; 
@@ -43,8 +42,6 @@ function initLogin() {
     if (loginForm) {
       loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        
-        // OPRAVA: Oříznutí mezer a převod na malá písmena pro 100% spolehlivost přihlášení
         const u = document.getElementById('username').value.trim().toLowerCase();
         const p = document.getElementById('password').value.trim().toLowerCase();
 
@@ -53,7 +50,7 @@ function initLogin() {
           if (loginScreen) loginScreen.classList.add('hidden');
           bootDesktop();
         } else {
-          if (loginError) loginError.textContent = 'Hardware Auth Refused: Invalid Credentials';
+          if (loginError) loginError.textContent = 'Hardware Auth Refused';
         }
       });
     }
@@ -67,25 +64,21 @@ function bootDesktop() {
   if (sys_state.kernel_ready || !getSysAuth()) return;
   sys_state.kernel_ready = true;
 
-  // Alokace hardwarově akcelerovaných vrstev registru
   sys_state.dom_icons = document.getElementById('desktop-icons');
   sys_state.dom_layer = document.getElementById('windows-layer');
   sys_state.dom_taskbar = document.getElementById('taskbar-apps');
   sys_state.dom_menu = document.getElementById('start-menu');
 
-  document.querySelectorAll('.hidden-on-login').forEach(el => {
-    el.style.setProperty('display', '');
-  });
+  document.querySelectorAll('.hidden-on-login').forEach(el => el.style.setProperty('display', ''));
 
   buildHardwareIcons();
   syncTaskbar();
-  requestPid('calculator'); // Okamžitý instanční start kalkulačky
+  requestPid('calculator'); 
 
   const start_btn = document.getElementById('start-button');
   if (start_btn) {
     start_btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      sys_state.dom_menu?.classList.toggle('hidden');
+      e.stopPropagation(); sys_state.dom_menu?.classList.toggle('hidden');
     });
   }
 
@@ -94,41 +87,31 @@ function bootDesktop() {
   sys_state.dom_menu?.querySelectorAll('.menu-item').forEach(btn => {
     btn.addEventListener('click', () => {
       if (btn.dataset.action === 'logout') {
-        localStorage.removeItem('wos_lock');
-        location.reload(); // Hard reset paměťových registrů
-        return;
+        localStorage.removeItem('wos_lock'); location.reload(); return;
       }
       requestPid(btn.dataset.app);
     });
   });
 
   const clock = document.getElementById('clock');
-  const tick = () => { 
-    if (clock) clock.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); 
-  };
-  tick(); 
-  setInterval(tick, 1000);
+  const tick = () => { if (clock) clock.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); };
+  tick(); setInterval(tick, 1000);
 }
 
 function buildHardwareIcons() {
-  if (!sys_state.dom_icons) return;
-  sys_state.dom_icons.innerHTML = '';
-  
+  if (!sys_state.dom_icons) return; sys_state.dom_icons.innerHTML = '';
   const target_apps = [['Notepad', 'notepad', '✎'], ['Files', 'files', '📁'], ['Calculator', 'calculator', '🧮']];
   const fragment = document.createDocumentFragment();
   
   target_apps.forEach(([name, app, emoji]) => {
-    const btn = document.createElement('button');
-    btn.className = 'desktop-icon';
+    const btn = document.createElement('button'); btn.className = 'desktop-icon';
     btn.innerHTML = `<div class="icon">${emoji}</div><div class="label">${name}</div>`;
-    btn.addEventListener('click', () => requestPid(app));
-    fragment.appendChild(btn);
+    btn.addEventListener('click', () => requestPid(app)); fragment.appendChild(btn);
   });
   sys_state.dom_icons.appendChild(fragment);
 }
-
 // ============================================================================
-// MICRO-KERNEL WEB OS - ČÁST 2 ze 2 (MODULAR LAYER)
+// KERNEL OS - DÍL B: PROCESY, RENDERER OKEN A HARDWAROVÁ AKCELERACE
 // ============================================================================
 function requestPid(app_type) {
   if (!sys_state.dom_layer) return;
@@ -156,47 +139,32 @@ function allocateRenderLayer(win) {
 
   node.innerHTML = `
     <div class="window-header"><div class="window-title">${win.title}</div>
-      <div class="window-controls">
-        <button class="control-btn minimize" data-pid="${win.id}"></button>
-        <button class="control-btn close" data-pid="${win.id}"></button>
-      </div>
-    </div><div class="window-content"></div>
-  `;
+      <div class="window-controls"><button class="control-btn minimize" data-pid="${win.id}"></button><button class="control-btn close" data-pid="${win.id}"></button></div>
+    </div><div class="window-content"></div>`;
+
   const content = node.querySelector('.window-content');
   
-  // --- 1. KALKULAČKA (JÁDRO POUZE VYSTAVÍ GRAFIKU) ---
   if (win.type === 'calculator') {
     content.innerHTML = `
       <div class="app-content calculator-content" style="gap:6px; overflow-y:auto;">
         <div class="calc-screen" id="sc-${win.id}">0</div>
         <div class="calculator-grid" style="grid-template-rows: repeat(5, 38px); flex:none; margin-bottom:4px;">
-          <button class="calc-key operator" data-v="C">C</button><button class="calc-key operator" data-v="/">/</button>
-          <button class="calc-key operator" data-v="*">×</button><button class="calc-key operator" data-v="DEL">⌫</button>
-          <button class="calc-key" data-v="7">7</button><button class="calc-key" data-v="8">8</button><button class="calc-key" data-v="9">9</button>
-          <button class="calc-key operator" data-v="-">−</button><button class="calc-key" data-v="4">4</button>
-          <button class="calc-key" data-v="5">5</button><button class="calc-key" data-v="6">6</button><button class="calc-key" data-v="+">+</button>
-          <button class="calc-key" data-v="1">1</button><button class="calc-key" data-v="2">2</button><button class="calc-key" data-v="3">3</button>
-          <button class="calc-key equals" data-v="=" style="grid-row: span 2; height:100%;">=</button>
+          <button class="calc-key operator" data-v="C">C</button><button class="calc-key operator" data-v="/">/</button><button class="calc-key operator" data-v="*">×</button><button class="calc-key operator" data-v="DEL">⌫</button>
+          <button class="calc-key" data-v="7">7</button><button class="calc-key" data-v="8">8</button><button class="calc-key" data-v="9">9</button><button class="calc-key operator" data-v="-">−</button>
+          <button class="calc-key" data-v="4">4</button><button class="calc-key" data-v="5">5</button><button class="calc-key" data-v="6">6</button><button class="calc-key operator" data-v="+">+</button>
+          <button class="calc-key" data-v="1">1</button><button class="calc-key" data-v="2">2</button><button class="calc-key" data-v="3">3</button><button class="calc-key equals" data-v="=" style="grid-row: span 2; height:100%;">=</button>
           <button class="calc-key" data-v="0" style="grid-column: span 2;">0</button><button class="calc-key" data-v=".">.</button>
         </div>
         <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:2px 0;">🔬 Vědecké funkce</div>
         <div class="calculator-grid" style="grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 34px); flex:none; gap:5px; margin-bottom:4px;">
-          <button class="calc-key operator" data-sci="sqrt">√</button><button class="calc-key operator" data-sci="sq2">x²</button>
-          <button class="calc-key operator" data-sci="sq3">x³</button><button class="calc-key operator" data-sci="log">log</button>
-          <button class="calc-key operator" data-sci="sin">sin</button><button class="calc-key operator" data-sci="cos">cos</button>
-          <button class="calc-key operator" data-sci="tan">tan</button><button class="calc-key operator" data-sci="ln">ln</button>
+          <button class="calc-key operator" data-sci="sqrt">√</button><button class="calc-key operator" data-sci="sq2">x²</button><button class="calc-key operator" data-sci="sq3">x³</button><button class="calc-key operator" data-sci="log">log</button>
+          <button class="calc-key operator" data-sci="sin">sin</button><button class="calc-key operator" data-sci="cos">cos</button><button class="calc-key operator" data-sci="tan">tan</button><button class="calc-key operator" data-sci="ln">ln</button>
         </div>
         <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:2px 0;">🌌 Fyzikální konstanty</div>
         <div class="calculator-grid" style="grid-template-columns: repeat(4, 1fr); grid-template-rows: 34px; flex:none; gap:5px;">
-          <button class="calc-key operator" data-v="3.14159265">π</button><button class="calc-key operator" data-v="2.71828182">e</button>
-          <button class="calc-key operator" data-v="9.81">g</button><button class="calc-key operator" data-v="299792458">c</button>
+          <button class="calc-key operator" data-v="3.14159265">π</button><button class="calc-key operator" data-v="2.71828182">e</button><button class="calc-key operator" data-v="9.81">g</button><button class="calc-key operator" data-v="299792458">c</button>
         </div>
       </div>`;
-    
-    // DELEGACE: Aktivace izolovaného modulu kalkulačky z externího souboru
-    if (window.initScientificCalculator) {
-      window.initScientificCalculator(win.id, node);
-    }
   }
 
   if (win.type === 'notepad') {
@@ -229,6 +197,11 @@ function allocateRenderLayer(win) {
     });
   });
   bindHardwareDrag(node, win); sys_state.dom_layer.appendChild(node);
+  
+  if (win.type === 'calculator' && window.initScientificCalculator) {
+    window.initScientificCalculator(win.id, node);
+  }
+
   setTimeout(() => node.classList.add('window-open'), 10); switchFocus(win.id);
 }
 
