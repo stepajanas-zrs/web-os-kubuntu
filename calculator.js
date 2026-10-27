@@ -1,5 +1,5 @@
 // ============================================================================
-// SUBSYSTÉM VĚDECKO-FYZIKÁLNÍ KALKULAČKY (ISOLATED COMPONENT)
+// SUBSYSTÉM VĚDECKO-FYZIKÁLNÍ KALKULAČKY (ISOLATED COMPONENT - OPRAVENO)
 // ============================================================================
 window.initScientificCalculator = function(winId, wrapperNode) {
   const scr = document.getElementById(`sc-${winId}`);
@@ -7,7 +7,7 @@ window.initScientificCalculator = function(winId, wrapperNode) {
 
   if (!wrapperNode || !scr) return;
 
-  // Izolované zachycení kliknutí pouze v rámci tohoto okna
+  // Izolované zachycení kliknutí výhradně uvnitř okna kalkulačky
   wrapperNode.addEventListener('click', (e) => {
     const btn = e.target.closest('.calc-key');
     if (!btn) return;
@@ -22,7 +22,7 @@ window.initScientificCalculator = function(winId, wrapperNode) {
         buffer = buffer.slice(0, -1);
       } else if (v === '=') {
         try {
-          // Bezpečné vyhodnocení matematického řetězce
+          // Vyhodnocení matematického řetězce z displeje
           buffer = String(Function(`"use strict"; return (${buffer || '0'})`)());
         } catch {
           buffer = 'Error';
@@ -40,14 +40,14 @@ window.initScientificCalculator = function(winId, wrapperNode) {
         if (sci === 'log') buffer = String(Math.log10(cur));
         if (sci === 'ln') buffer = String(Math.log(cur));
         if (sci === 'sin') buffer = String(Math.sin(cur * Math.PI / 180)); // Úhly ve stupních
-        if (sci === 'cos') stroke = String(Math.cos(cur * Math.PI / 180));
+        if (sci === 'cos') buffer = String(Math.cos(cur * Math.PI / 180)); // OPRAVA: změněno ze stroke na buffer
         if (sci === 'tan') buffer = String(Math.tan(cur * Math.PI / 180));
       } catch {
         buffer = 'Error';
       }
     }
 
-    // Aktualizace displeje konkrétní kalkulačky
+    // Okamžitý zápis na displej konkrétního okna
     scr.textContent = buffer || '0';
   });
 };
