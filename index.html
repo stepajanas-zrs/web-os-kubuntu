@@ -3,79 +3,95 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kubuntu OS - KDE Plasma Web Desktop</title>
+  <title>Web OS - Kubuntu Style</title>
   <link rel="stylesheet" href="styles.css">
+  <!-- Načtení skriptu s atributem defer, aby se DOM načetl jako první -->
+  <script src="script.js" defer></script>
 </head>
 <body>
 
-  <!-- ==========================================
-       1. SDDM LOGIN SCREEN (PŘIHLAŠOVACÍ OBRAZOVKA)
-       ========================================== -->
+  <!-- 1. PŘIHLAŠOVACÍ OBRAZOVKA (V CSS dostane display: none po přidání třídy .hidden) -->
   <div id="login-screen" class="hidden">
     <form id="login-form">
-      <div style="text-align: center; margin-bottom: 10px;">
-        <span style="font-size: 3.5rem; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4));">⚙️</span>
-        <h2 style="margin: 10px 0 2px 0; font-size: 1.3rem; font-weight: 600;">Kubuntu Linux</h2>
-        <p style="margin: 0; font-size: 0.8rem; color: var(--muted);">KDE Plasma 6.0 Session</p>
-      </div>
-
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <label for="username" style="font-size: 0.8rem; color: var(--muted);">Uživatel</label>
-        <input type="text" id="username" placeholder="Uživatelské jméno" required autocomplete="username">
-      </div>
-
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <label for="password" style="font-size: 0.8rem; color: var(--muted);">Heslo</label>
-        <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
-      </div>
-
+      <h2>Přihlášení do Web OS</h2>
       <div id="login-error"></div>
-
-      <button class="primary-btn" type="submit" style="font-weight: bold; margin-top: 6px; padding: 10px;">
-        Přihlásit se
-      </button>
-      
-      <div style="text-align: center; font-size: 0.75rem; color: var(--muted); margin-top: 4px;">
-        Výchozí: stepan / janas
+      <div>
+        <label for="username">Uživatelské jméno:</label>
+        <input type="text" id="username" autocomplete="username" required>
       </div>
+      <div>
+        <label for="password">Heslo:</label>
+        <input type="password" id="password" autocomplete="current-password" required>
+      </div>
+      <button class="primary-btn" type="submit">Přihlásit se</button>
     </form>
   </div>
 
-  <!-- ==========================================
-       2. HLAVNÍ PLOCHA (KUBUNTU PLASMA DESKTOP)
-       ========================================== -->
-  <main class="desktop hidden-on-login">
-    <!-- Ikony na ploše (Dolphin, Kate, Discover + stažené programy) -->
+  <!-- MAIN DESKTOP PROSTŘEDÍ -->
+  <div class="desktop hidden-on-login">
+    
+    <!-- 2. IKONY NA PLOŠE (Plní se dynamicky z JavaScriptu) -->
     <div id="desktop-icons" class="desktop-icons"></div>
 
-    <!-- Vrstva, do které JavaScript dynamicky generuje okna běžících aplikací -->
+    <!-- 3. VRSTVA PRO OKNA APLIKACÍ (Zde se otevírají programy) -->
     <div id="windows-layer" class="windows-layer"></div>
 
-    <!-- KDE Aplikační menu - Kickoff (skryté, otevírá se logem) -->
-    <div id="start-menu" class="start-menu hidden"></div>
-  </main>
+    <!-- 4. NABÍDKA START (Skrytá, dokud se neklikne na logo) -->
+    <div id="start-menu" class="start-menu hidden">
+      <button class="menu-item" type="button" data-app="notepad">✎ Notepad</button>
+      <button class="menu-item" type="button" data-app="files">📁 Files (Soubory)</button>
+      <button class="menu-item" type="button" data-app="browser">🌐 Browser (Prohlížeč)</button>
+      <button class="menu-item" type="button" data-app="terminal">⌨ Terminal</button>
+      <button class="menu-item" type="button" data-app="calculator">🧮 Calculator</button>
+      <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.08); margin: 6px 0;">
+      <button class="menu-item" type="button" data-action="logout" style="color: var(--danger);">🔒 Odhlásit se</button>
+    </div>
 
-  <!-- ==========================================
-       3. SPODNÍ PANEL (KDE PLASMA PANEL)
-       ========================================== -->
+  </div>
+  <!-- 5. SPODNÍ SYSTÉMOVÁ LIŠTA (TASKBAR) -->
   <footer class="taskbar hidden-on-login">
-    <!-- Spouštěcí tlačítko / Logo Kubuntu -->
-    <button id="start-button" class="start-button" type="button" aria-label="Nabídka aplikací">
-      <span style="filter: drop-shadow(0 0 4px rgba(61,174,233,0.6));">🌀</span>
+    
+    <!-- Modré startovací tlačítko (K-Menu logo) -->
+    <button id="start-button" class="start-button" type="button" aria-label="Nabídka Start">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="color: #60a5fa; display: block;">
+        <circle cx="12" cy="12" r="10" fill="rgba(96, 165, 250, 0.2)"/>
+        <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm-1 14.5v-9l6 4.5z"/>
+      </svg>
     </button>
 
-    <!-- Kontejner pro minimalizovaná a běžící okna aplikací -->
+    <!-- Aktivní běžící aplikace na liště (Plní se z JS) -->
     <div id="taskbar-apps" class="taskbar-apps"></div>
 
-    <!-- Systémová oblast (Tray vpravo - stav sítě, baterie a hodiny) -->
+    <!-- Systémová část (Hodiny a oznamovací oblast) -->
     <div class="tray">
-      <span style="font-size: 0.95rem; cursor: pointer;" title="Připojení k síti">🌐</span>
-      <span style="font-size: 0.95rem; cursor: pointer;" title="Hlasitost">🔊</span>
-      <time id="clock" class="clock"></time>
+      <div id="clock" class="clock">00:00</div>
     </div>
+
   </footer>
 
-  <!-- Načtení kompletní řídící logiky operačního systému -->
-  <script src="script.js"></script>
+  <!-- Šablona skryté kalkulačky v HTML pro případ, že by ji skript nevygeneroval dynamicky -->
+  <div style="display: none;">
+    <div class="calculator-grid">
+      <button class="calc-key operator" data-value="C">C</button>
+      <button class="calc-key operator" data-value="/">/</button>
+      <button class="calc-key operator" data-value="*">×</button>
+      <button class="calc-key operator" data-value="DEL">DEL</button>
+      <button class="calc-key" data-value="7">7</button>
+      <button class="calc-key" data-value="8">8</button>
+      <button class="calc-key" data-value="9">9</button>
+      <button class="calc-key operator" data-value="-">−</button>
+      <button class="calc-key" data-value="4">4</button>
+      <button class="calc-key" data-value="5">5</button>
+      <button class="calc-key" data-value="6">6</button>
+      <button class="calc-key operator" data-value="+">+</button>
+      <button class="calc-key" data-value="1">1</button>
+      <button class="calc-key" data-value="2">2</button>
+      <button class="calc-key" data-value="3">3</button>
+      <button class="calc-key equals" data-value="=">=</button>
+      <button class="calc-key" data-value="0">0</button>
+      <button class="calc-key" data-value=".">.</button>
+    </div>
+  </div>
+
 </body>
 </html>
