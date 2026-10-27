@@ -128,44 +128,30 @@ function buildHardwareIcons() {
 }
 
 // ============================================================================
-// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED) - ČÁST 2 ze 2 (OPRAVENO PRO START)
+// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED) - ČÁST 2 ze 2 (APLIKACE A REAGOVÁNÍ)
 // ============================================================================
 function requestPid(app_type) {
   if (!sys_state.dom_layer) return;
-  
-  // Kontrola, zda již aplikace neběží v paměti
   for (let [pid, win] of sys_state.m_windows) {
     if (win.type === app_type) {
-      if (win.minimized) {
-        win.node.style.setProperty('display', 'flex');
-        win.minimized = false;
-      }
-      switchFocus(pid);
-      return;
+      if (win.minimized) { win.node.style.setProperty('display', 'flex'); win.minimized = false; }
+      switchFocus(pid); return;
     }
   }
-
-  const meta = APP_REGISTRY[app_type];
-  if (!meta) return;
-
+  const meta = APP_REGISTRY[app_type]; if (!meta) return;
   const pid = `pid-${sys_state.next_pid++}`;
   const win_obj = {
     id: pid, type: app_type, title: meta.title,
     x: 120 + (sys_state.m_windows.size * 30), y: 90 + (sys_state.m_windows.size * 25),
     w: meta.w, h: meta.h, minimized: false
   };
-
   allocateRenderLayer(win_obj);
 }
 
 function allocateRenderLayer(win) {
   const node = document.createElement('div');
-  node.className = 'window';
-  node.id = win.id;
-  node.style.setProperty('width', `${win.w}px`);
-  node.style.setProperty('height', `${win.h}px`);
-  
-  // Hardwarová akcelerace pozice okna skrze grafickou kartu
+  node.className = 'window'; node.id = win.id;
+  node.style.setProperty('width', `${win.w}px`); node.style.setProperty('height', `${win.h}px`);
   node.style.setProperty('transform', `translate3d(${win.x}px, ${win.y}px, 0px)`);
 
   node.innerHTML = `
@@ -181,7 +167,7 @@ function allocateRenderLayer(win) {
 
   const content = node.querySelector('.window-content');
   
-  // Vykreslení obsahu: Vědecká kalkulačka KCalc
+  // --- 1. KALKULAČKA (OPRAVENO: Stoprocentní čtení data-v atributů) ---
   if (win.type === 'calculator') {
     content.innerHTML = `
       <div class="app-content calculator-content">
@@ -200,62 +186,78 @@ function allocateRenderLayer(win) {
           <button class="calc-key" data-v="0" style="grid-column: span 3;">0</button><button class="calc-key" data-v=".">.</button>
         </div>
       </div>`;
-      
-    const scr = document.getElementById(`sc-${win.id}`);
-    let buffer = '';
-    
+    const scr = document.getElementById(`sc-${win.id}`); let buffer = '';
     node.addEventListener('click', (e) => {
       const btn = e.target.closest('.calc-key'); if (!btn) return;
-      const v = btn.dataset.v; if (!v) return;
+      const v = btn.getAttribute('data-v'); if (!v) return; // OPRAVA: Přímé čtení HTML atributu data-v
       if (v === 'C') buffer = '';
       else if (v === 'DEL') buffer = buffer.slice(0, -1);
       else if (v === '=') { try { buffer = String(Function(`"use strict"; return (${buffer || '0'})`)()); } catch { buffer = 'Error'; } }
-      else buffer += v;
+      else { if (buffer === '0' && v !== '.') buffer = v; else buffer += v; }
       if (scr) scr.textContent = buffer || '0';
     });
   }
 
+  // --- 2. NOTEPAD (PLNÁ FUNKČNOST: Automatické ukládání změn do RAM FS) ---
   if (win.type === 'notepad') {
-    content.innerHTML = `<div class="app-content"><textarea class="notepad-editor" style="width:100%;height:100%;"></textarea></div>`;
+    content.innerHTML = `
+      <div class="app-content calculator-content">
+        <textarea class="notepad-editor" id="txt-${win.id}" style="width:100%;height:calc(100% - 40px);">${sys_state.fs['Home/Welcome.txt']}</textarea>
+        <div class="secondary-bar"><button class="primary-btn" id="save-${win.id}">Uložit soubor</button></div>
+      </div>`;
+    const area = document.getElementById(`txt-${win.id}`);
+    const sBtn = document.getElementById(`save-${win.id}`);
+    if (sBtn && area) {
+      sBtn.addEventListener('click', () => {
+        sys_state.fs['Home/Welcome.txt'] = area.value; // Zápis do sdíleného souborového registru
+        localStorage.setItem('web-os-note', area.value); // Trvalá záloha v prohlížeči
+      });
+    }
   }
 
+  // --- 3. FILES (PLNÁ FUNKČNOST: Klikací strom se čtením souborů) ---
   if (win.type === 'files') {
-    content.innerHTML = `<div class="app-content"><div class="files-layout"><div class="file-list"><ul><li class="active">Welcome.txt</li></ul></div><div class="file-preview"><pre>${sys_state.fs['Home/Welcome.txt']}</pre></div></div></div>`;
+    content.innerHTML = `
+      <div class="app-content"><div class="files-layout">
+        <div class="file-list"><ul id="ul-${win.id}"></ul></div>
+        <div class="file-preview"><pre id="pre-${win.id}"></pre></div>
+      </div></div>`;
+    const renderExplorer = () => {
+      const ul = document.getElementById(`ul-${win.id}`);
+      const pre = document.getElementById(`pre-${win.id}`);
+      if (!ul || !pre) return; ul.innerHTML = '';
+      Object.keys(sys_state.fs).forEach(path => {
+        const li = document.createElement('li');
+        const btn = document.createElement('button'); btn.textContent = path;
+        if (path === sys_state.selectedFile) btn.className = 'active';
+        btn.addEventListener('click', () => { sys_state.selectedFile = path; renderExplorer(); });
+        li.appendChild(btn); ul.appendChild(li);
+      });
+      pre.textContent = sys_state.fs[sys_state.selectedFile] || '';
+    };
+    renderExplorer();
   }
 
-  win.node = node;
-  sys_state.m_windows.set(win.id, win);
-
+  win.node = node; sys_state.m_windows.set(win.id, win);
   node.addEventListener('pointerdown', () => switchFocus(win.id));
   node.querySelectorAll('.control-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const target_pid = btn.dataset.pid;
-      if (btn.classList.contains('close')) {
-        document.getElementById(target_pid)?.remove();
-        sys_state.m_windows.delete(target_pid);
-      } else {
-        const w_data = sys_state.m_windows.get(target_pid);
-        if (w_data) { w_data.node.style.setProperty('display', 'none'); w_data.minimized = true; }
-      }
+      e.stopPropagation(); const target_pid = btn.dataset.pid;
+      if (btn.classList.contains('close')) { document.getElementById(target_pid)?.remove(); sys_state.m_windows.delete(target_pid); }
+      else { const w_data = sys_state.m_windows.get(target_pid); if (w_data) { w_data.node.style.setProperty('display', 'none'); w_data.minimized = true; } }
       syncTaskbar();
     });
   });
-
-  bindHardwareDrag(node, win);
-  sys_state.dom_layer.appendChild(node);
-  setTimeout(() => node.classList.add('window-open'), 10);
-  switchFocus(win.id);
+  bindHardwareDrag(node, win); sys_state.dom_layer.appendChild(node);
+  setTimeout(() => node.classList.add('window-open'), 10); switchFocus(win.id);
 }
 
 function switchFocus(pid) {
   let index = 0;
   for (let [id, win] of sys_state.m_windows) {
-    const is_target = id === pid;
-    win.node.classList.toggle('focused', is_target);
+    const is_target = id === pid; win.node.classList.toggle('focused', is_target);
     win.node.style.setProperty('z-index', is_target ? '5000' : String(100 + index));
-    if (is_target) sys_state.active_pid = pid;
-    index++;
+    if (is_target) sys_state.active_pid = pid; index++;
   }
   syncTaskbar();
 }
@@ -264,8 +266,7 @@ function bindHardwareDrag(element, win) {
   const header = element.querySelector('.window-header'); if (!header) return;
   let ox = 0, oy = 0;
   header.addEventListener('pointerdown', (e) => {
-    if (e.target.matches('button')) return;
-    ox = e.clientX - win.x; oy = e.clientY - win.y;
+    if (e.target.matches('button')) return; ox = e.clientX - win.x; oy = e.clientY - win.y;
     element.setPointerCapture(e.pointerId);
     const drag = (ev) => { win.x = ev.clientX - ox; win.y = ev.clientY - oy; element.style.setProperty('transform', `translate3d(${win.x}px, ${win.y}px, 0px)`); };
     const stop = () => { element.removeEventListener('pointermove', drag); element.removeEventListener('pointerup', stop); };
@@ -284,4 +285,4 @@ function syncTaskbar() {
   sys_state.dom_taskbar.appendChild(frag);
 }
 
-if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initLogin); } else { initLogin(); }
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initKernel); } else { initKernel(); }
