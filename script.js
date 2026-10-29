@@ -1,17 +1,17 @@
 // ============================================================================
-// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 1 ze 4
+// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED) - 1. POLOVINA (DÍL A)
 // ============================================================================
 const APP_REGISTRY = {
   notepad: { title: 'Notepad', w: 540, h: 440 },
   files: { title: 'Files', w: 720, h: 480 },
-  calculator: { title: 'KCalc (Kalkulačka)', w: 340, h: 440 },
+  calculator: { title: 'KCalc (Kalkulačka)', w: 340, h: 570 },
   textbook: { title: 'Učebnice a slovníky', w: 680, h: 500 },
   games: { title: 'CrazyGames Centrum', w: 850, h: 550 }
 };
 
 const LOGIN = { username: 'stepan', password: 'janas' };
 
-// Globální reference na elementy
+// Globální reference na DOM prvky
 let desktopIcons, windowsLayer, taskbarApps, startMenu, startButton, clock, loginScreen, loginForm, loginError;
 
 const sys_state = {
@@ -33,30 +33,18 @@ const sys_state = {
     'Ucebnice/Strana_8_Gramatika_A_Casy.txt': '=== STRANA 8: GRAMATIKA PRO RESTAURACE ===\n\nPoužívání zdvořilostních obratů (Modal Verbs):\n- "I want" je neslušné. Vždy používejte "I would like..." (Chtěl/a bych...)\n- Pro žádosti používejte "Can I have..." nebo "Could you bring us..."\n\nBudoucí čas při objednávání:\n- V momentě rozhodnutí u stolu používáme čisté "I will" (Zkráceně: I\'ll):\n  Příklad: "I\'ll have the chicken." (Dám si kuře. - Rozhodl jsem se právě teď).'
   }
 };
-// ============================================================================
-// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 2 ze 4
-// ============================================================================
+
 function getAuthState() { return localStorage.getItem('web-os-auth') === 'true'; }
 function setAuthState(value) { localStorage.setItem('web-os-auth', value ? 'true' : 'false'); }
-
-function updateClock() { 
-  if (clock) clock.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); 
-}
-
-function escapeHtml(text) { 
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); 
-}
+function updateClock() { if (clock) clock.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+function escapeHtml(text) { return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
 function initLogin() {
   loginScreen = document.getElementById('login-screen');
   loginForm = document.getElementById('login-form');
   loginError = document.getElementById('login-error');
   const shouldShowLogin = !getAuthState();
-  
-  document.querySelectorAll('.hidden-on-login').forEach(el => {
-    el.style.setProperty('display', shouldShowLogin ? 'none' : 'block');
-  });
-
+  document.querySelectorAll('.hidden-on-login').forEach(el => el.style.setProperty('display', shouldShowLogin ? 'none' : 'block'));
   if (shouldShowLogin) {
     if (loginScreen) loginScreen.classList.remove('hidden');
     if (loginForm) {
@@ -65,9 +53,7 @@ function initLogin() {
         const u = document.getElementById('username').value.trim().toLowerCase();
         const p = document.getElementById('password').value.trim().toLowerCase();
         if (u === LOGIN.username && p === LOGIN.password) {
-          setAuthState(true);
-          if (loginScreen) loginScreen.classList.add('hidden');
-          bootDesktop();
+          setAuthState(true); if (loginScreen) loginScreen.classList.add('hidden'); bootDesktop();
         } else {
           if (loginError) loginError.textContent = 'Neplatné uživatelské jméno nebo heslo!';
         }
@@ -75,70 +61,28 @@ function initLogin() {
     }
     return;
   }
-  if (loginScreen) loginScreen.classList.add('hidden');
-  bootDesktop();
-}
-
-function bootDesktop() {
-  if (sys_state.kernel_ready || !getAuthState()) return;
-  sys_state.kernel_ready = true;
-
-  desktopIcons = document.getElementById('desktop-icons');
-  windowsLayer = document.getElementById('windows-layer');
-  taskbarApps = document.getElementById('taskbar-apps');
-  startMenu = document.getElementById('start-menu');
-  startButton = document.getElementById('start-button');
-  clock = document.getElementById('clock');
-
-  document.querySelectorAll('.hidden-on-login').forEach(el => el.style.setProperty('display', ''));
-
-  buildDesktopIcons(); renderTaskbar();
-  requestPid('calculator');
-
-  if (startButton) {
-    startButton.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (startMenu) startMenu.classList.toggle('hidden');
-    });
-  }
-
-  document.addEventListener('click', (e) => {
-    if (startMenu && !e.target.closest('#start-button') && !e.target.closest('#start-menu')) {
-      startMenu.classList.add('hidden');
-    }
-  });
-
-  if (startMenu) {
-    startMenu.querySelectorAll('.menu-item').forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (btn.dataset.action === 'logout') {
-          setAuthState(false); sys_state.kernel_ready = false; sys_state.m_windows.clear();
-          if (windowsLayer) windowsLayer.innerHTML = '';
-          if (taskbarApps) taskbarApps.innerHTML = '';
-          startMenu.classList.add('hidden');
-          loginScreen.classList.remove('hidden');
-          return;
-        }
-        requestPid(btn.dataset.app); startMenu.classList.add('hidden');
-      });
-    });
-  }
-  updateClock(); setInterval(updateClock, 1000);
+  if (loginScreen) loginScreen.classList.add('hidden'); bootDesktop();
 }
 // ============================================================================
-// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 3 ze 4
+// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED) - ČÁST B1: ENGINE MECHANISMUS
 // ============================================================================
 function requestPid(app_type) {
   if (!windowsLayer) return;
   for (let [pid, win] of sys_state.m_windows) {
-    if (win.type === app_type) {
-      if (win.minimized) { win.node.style.display = 'flex'; win.minimized = false; }
-      switchFocus(pid); return;
+    if (win.type === app_type) { 
+      if (win.minimized) { win.node.style.display = 'flex'; win.minimized = false; } 
+      switchFocus(pid); return; 
     }
   }
   const meta = APP_REGISTRY[app_type]; if (!meta) return;
   const pid = `pid-${sys_state.next_pid++}`;
-  const win_obj = { id: pid, type: app_type, title: meta.title, x: 120 + (sys_state.m_windows.size * 30), y: 90 + (sys_state.m_windows.size * 25), w: app_type === 'calculator' ? 440 : (app_type === 'textbook' ? 700 : meta.w), h: app_type === 'calculator' ? 570 : (app_type === 'textbook' ? 520 : meta.h), minimized: false };
+  const win_obj = { 
+    id: pid, type: app_type, title: meta.title, 
+    x: 120 + (sys_state.m_windows.size * 30), y: 90 + (sys_state.m_windows.size * 25), 
+    w: app_type === 'calculator' ? 440 : (app_type === 'textbook' ? 700 : meta.w), 
+    h: app_type === 'calculator' ? 570 : (app_type === 'textbook' ? 520 : meta.h), 
+    minimized: false 
+  };
   allocateRenderLayer(win_obj);
 }
 
@@ -180,7 +124,9 @@ function registerAndSpawn(node, win) {
   if (win.type === 'textbook' && window.initTextbookApp) window.initTextbookApp(win.id, node);
   setTimeout(() => node.classList.add('window-open'), 10); renderTaskbar(); switchFocus(win.id);
 }
-
+// ============================================================================
+// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED) - ČÁST B2: GRAPHICS SHADERS & BOOT
+// ============================================================================
 function renderTaskbar() {
   if (!taskbarApps) return; taskbarApps.innerHTML = '';
   const frag = document.createDocumentFragment();
@@ -191,54 +137,22 @@ function renderTaskbar() {
   }
   taskbarApps.appendChild(frag);
 }
-// ============================================================================
-// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 4 ze 4
-// ============================================================================
+
 function allocateRenderLayer(win) {
-  const node = document.createElement('div');
-  node.className = 'window'; node.id = win.id;
+  const node = document.createElement('div'); node.className = 'window'; node.id = win.id;
   node.style.setProperty('width', `${win.w}px`); node.style.setProperty('height', `${win.h}px`);
   node.style.setProperty('transform', `translate3d(${win.x}px, ${win.y}px, 0px)`);
-
-  node.innerHTML = `
-    <div class="window-header"><div class="window-title">${win.title}</div>
-      <div class="window-controls"><button class="control-btn minimize" data-action="minimize" data-pid="${win.id}"></button><button class="control-btn close" data-action="close" data-pid="${win.id}"></button></div>
-    </div><div class="window-content"></div>`;
-
+  node.innerHTML = `<div class="window-header"><div class="window-title">${win.title}</div><div class="window-controls"><button class="control-btn minimize" data-action="minimize" data-pid="${win.id}"></button><button class="control-btn close" data-action="close" data-pid="${win.id}"></button></div></div><div class="window-content"></div>`;
   const content = node.querySelector('.window-content');
   
   if (win.type === 'calculator') {
-    content.innerHTML = `
-      <div class="app-content calculator-content" style="gap:6px; overflow-y:auto;">
-        <div class="calc-screen" id="sc-${win.id}">0</div>
-        <div class="calculator-grid" style="grid-template-rows: repeat(5, 38px); flex:none; margin-bottom:4px;">
-          <button class="calc-key operator" data-v="C">C</button><button class="calc-key operator" data-v="/">/</button><button class="calc-key operator" data-v="*">×</button><button class="calc-key operator" data-v="DEL">⌫</button>
-          <button class="calc-key" data-v="7">7</button><button class="calc-key" data-v="8">8</button><button class="calc-key" data-v="9">9</button><button class="calc-key operator" data-v="-">−</button>
-          <button class="calc-key" data-v="4">4</button><button class="calc-key" data-v="5">5</button><button class="calc-key" data-v="6">6</button><button class="calc-key operator" data-v="+">+</button>
-          <button class="calc-key" data-v="1">1</button><button class="calc-key" data-v="2">2</button><button class="calc-key" data-v="3">3</button><button class="calc-key equals" data-v="=" style="grid-row: span 2; height:100%;">=</button>
-          <button class="calc-key" data-v="0" style="grid-column: span 2;">0</button><button class="calc-key" data-v=".">.</button>
-        </div>
-        <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:2px 0;">🔬 Vědecké funkce</div>
-        <div class="calculator-grid" style="grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(2, 34px); flex:none; gap:5px; margin-bottom:4px;">
-          <button class="calc-key operator" data-v="(">(</button><button class="calc-key operator" data-v=")">)</button>
-          <button class="calc-key operator" data-sci="sqrt">√</button><button class="calc-key operator" data-sci="sq2">x²</button><button class="calc-key operator" data-sci="sq3">x³</button>
-          <button class="calc-key operator" data-sci="sin">sin</button><button class="calc-key operator" data-sci="cos">cos</button>
-          <button class="calc-key operator" data-sci="tan">tan</button><button class="calc-key operator" data-sci="log">log</button><button class="calc-key operator" data-sci="ln">ln</button>
-        </div>
-        <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:2px 0;">🌌 Fyzikální konstanty</div>
-        <div class="calculator-grid" style="grid-template-columns: repeat(4, 1fr); grid-template-rows: 34px; flex:none; gap:5px;">
-          <button class="calc-key operator" data-v="3.14159265">π</button><button class="calc-key operator" data-v="2.71828182">e</button>
-          <button class="calc-key operator" data-v="9.81">g</button><button class="calc-key operator" data-v="299792458">c</button>
-        </div>
-      </div>`;
+    content.innerHTML = `<div class="app-content calculator-content" style="gap:6px; overflow-y:auto;"><div class="calc-screen" id="sc-${win.id}">0</div><div class="calculator-grid" style="grid-template-rows: repeat(5, 38px); flex:none; margin-bottom:4px;"><button class="calc-key operator" data-v="C">C</button><button class="calc-key operator" data-v="/">/</button><button class="calc-key operator" data-v="*">×</button><button class="calc-key operator" data-v="DEL">⌫</button><button class="calc-key" data-v="7">7</button><button class="calc-key" data-v="8">8</button><button class="calc-key" data-v="9">9</button><button class="calc-key operator" data-v="-">−</button><button class="calc-key" data-v="4">4</button><button class="calc-key" data-v="5">5</button><button class="calc-key" data-v="6">6</button><button class="calc-key operator" data-v="+">+</button><button class="calc-key" data-v="1">1</button><button class="calc-key" data-v="2">2</button><button class="calc-key" data-v="3">3</button><button class="calc-key equals" data-v="=" style="grid-row: span 2; height:100%;">=</button><button class="calc-key" data-v="0" style="grid-column: span 2;">0</button><button class="calc-key" data-v=".">.</button></div><div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:2px 0;">🔬 Vědecké funkce</div><div class="calculator-grid" style="grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(2, 34px); flex:none; gap:5px; margin-bottom:4px;"><button class="calc-key operator" data-v="(">(</button><button class="calc-key operator" data-v=")">)</button><button class="calc-key operator" data-sci="sqrt">√</button><button class="calc-key operator" data-sci="sq2">x²</button><button class="calc-key operator" data-sci="sq3">x³</button><button class="calc-key operator" data-sci="sin">sin</button><button class="calc-key operator" data-sci="cos">cos</button><button class="calc-key operator" data-sci="tan">tan</button><button class="calc-key operator" data-sci="log">log</button><button class="calc-key operator" data-sci="ln">ln</button></div><div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:2px 0;">🌌 Fyzikální konstanty</div><div class="calculator-grid" style="grid-template-columns: repeat(4, 1fr); grid-template-rows: 34px; flex:none; gap:5px;"><button class="calc-key operator" data-v="3.14159265">π</button><button class="calc-key operator" data-v="2.71828182">e</button><button class="calc-key operator" data-v="9.81">g</button><button class="calc-key operator" data-v="299792458">c</button></div></div>`;
   }
-
   if (win.type === 'notepad') {
     content.innerHTML = `<div class="app-content calculator-content"><textarea class="notepad-editor" id="txt-${win.id}" style="width:100%;height:calc(100% - 40px);">${sys_state.fs['Home/Welcome.txt']}</textarea><div class="secondary-bar"><button class="primary-btn" id="save-${win.id}">Uložit soubor</button></div></div>`;
     const area = document.getElementById(`txt-${win.id}`); const sBtn = document.getElementById(`save-${win.id}`);
     if (sBtn && area) { sBtn.addEventListener('click', () => { sys_state.fs['Home/Welcome.txt'] = area.value; localStorage.setItem('web-os-note', area.value); }); }
   }
-
   if (win.type === 'files') {
     content.innerHTML = `<div class="app-content"><div class="files-layout"><div class="file-list"><ul id="ul-${win.id}"></ul></div><div class="file-preview"><pre id="pre-${win.id}"></pre></div></div></div>`;
     const renderExplorer = () => {
@@ -251,40 +165,12 @@ function allocateRenderLayer(win) {
     };
     renderExplorer();
   }
-
   if (win.type === 'textbook') {
-    content.innerHTML = `
-      <div class="app-content" style="padding:0; height:100%;">
-        <div class="files-layout" style="grid-template-columns: 210px 1fr; height:100%; gap:0;">
-          <div class="file-list" style="border-radius:0; border:none; border-right:1px solid var(--panel-border); padding:12px; display:flex; flex-direction:column; gap:4px; overflow-y:auto;">
-            <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); margin-bottom:4px; letter-spacing:0.5px;">KATEGORIE</div>
-            <button class="subject-tab active" data-page="Ucebnice/Strana_1_Zakladni_Konverzace.txt">📄 Strana 1: Konverzace</button>
-            <button class="subject-tab" data-page="Ucebnice/Strana_2_Objednavani_Jidla.txt">📄 Strana 2: Jídlo</button>
-            <button class="subject-tab" data-page="Ucebnice/Strana_3_Napoje_A_Dezerty.txt">📄 Strana 3: Nápoje</button>
-            <button class="subject-tab" data-page="Ucebnice/Strana_4_Placeni_A_Ucet.txt">📄 Strana 4: Placení</button>
-            <button class="subject-tab" data-page="Ucebnice/Strana_5_Gastro_Jednotky.txt">📄 Strana 5: Jednotky</button>
-            <button class="subject-tab" data-page="Ucebnice/Strana_6_Reseni_Problemu.txt">📄 Strana 6: Reklamace</button>
-            <button class="subject-tab" data-page="Ucebnice/Strana_7_Fraze_Pro_Nakup.txt">📄 Strana 7: Nákupy</button>
-            <button class="subject-tab" data-page="Ucebnice/Strana_8_Gramatika_A_Casy.txt">📄 Strana 8: Gramatika</button>
-          </div>
-          <div class="textbook-view-zone" style="padding:16px; height:100%; overflow:hidden;">
-            <p style="color:var(--text-muted);">Načítám knihovnu...</p>
-          </div>
-        </div>
-      </div>`;
+    content.innerHTML = `<div class="app-content" style="padding:0; height:100%;"><div class="files-layout" style="grid-template-columns: 210px 1fr; height:100%; gap:0;"><div class="file-list" style="border-radius:0; border:none; border-right:1px solid var(--panel-border); padding:12px; display:flex; flex-direction:column; gap:4px; overflow-y:auto;"><div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); margin-bottom:4px; letter-spacing:0.5px;">KATEGORIE</div><button class="subject-tab active" data-page="Ucebnice/Strana_1_Zakladni_Konverzace.txt">📄 Strana 1: Konverzace</button><button class="subject-tab" data-page="Ucebnice/Strana_2_Objednavani_Jidla.txt">📄 Strana 2: Jídlo</button><button class="subject-tab" data-page="Ucebnice/Strana_3_Napoje_A_Dezerty.txt">📄 Strana 3: Nápoje</button><button class="subject-tab" data-page="Ucebnice/Strana_4_Placeni_A_Ucet.txt">📄 Strana 4: Placení</button><button class="subject-tab" data-page="Ucebnice/Strana_5_Gastro_Jednotky.txt">📄 Strana 5: Jednotky</button><button class="subject-tab" data-page="Ucebnice/Strana_6_Reseni_Problemu.txt">📄 Strana 6: Reklamace</button><button class="subject-tab" data-page="Ucebnice/Strana_7_Fraze_Pro_Nakup.txt">📄 Strana 7: Nákupy</button><button class="subject-tab" data-page="Ucebnice/Strana_8_Gramatika_A_Casy.txt">📄 Strana 8: Gramatika</button></div><div class="textbook-view-zone" style="padding:16px; height:100%; overflow:hidden;"><p style="color:var(--text-muted);">Načítám knihovnu...</p></div></div></div>`;
   }
-
   if (win.type === 'games') {
-    content.innerHTML = `
-      <div class="app-content" style="padding:0; height:100%; background:#111522; overflow:hidden;">
-        <iframe src="https://crazygames.com" 
-                style="width:100%; height:100%; border:none; background:#111522;" 
-                allow="autoplay; gamepad; fullscreen" 
-                sandbox="allow-scripts allow-same-origin allow-popups allow-pointer-lock">
-        </iframe>
-      </div>`;
+    content.innerHTML = `<div class="app-content" style="padding:0; height:100%; background:#111522; overflow:hidden;"><iframe src="https://crazygames.com" style="width:100%; height:100%; border:none; background:#111522;" allow="autoplay; gamepad; fullscreen" sandbox="allow-scripts allow-same-origin allow-popups allow-pointer-lock"></iframe></div>`;
   }
-
   registerAndSpawn(node, win);
 }
 
