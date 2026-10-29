@@ -1,24 +1,17 @@
 // ============================================================================
-// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 1 ze 4 (FIXED AUTH REG)
+// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 1 ze 4 (OPRAVENÝ REGISTR)
 // ============================================================================
 const APP_REGISTRY = {
   notepad: { title: 'Notepad', w: 540, h: 440 },
   files: { title: 'Files', w: 720, h: 480 },
   calculator: { title: 'KCalc (Kalkulačka)', w: 340, h: 440 },
   textbook: { title: 'Učebnice a slovníky', w: 680, h: 500 },
-  games: { title: 'CrazyGames Centrum', w: 850, h: 550 } // Přidaná aplikace her
-};
-
-const APP_REGISTRY = {
-  notepad: { title: 'Notepad', w: 540, h: 440 },
-  files: { title: 'Files', w: 720, h: 480 },
-  calculator: { title: 'KCalc (Kalkulačka)', w: 340, h: 440 },
-  textbook: { title: 'Učebnice a slovníky', w: 680, h: 500 }
+  games: { title: 'CrazyGames Centrum', w: 850, h: 550 }
 };
 
 const LOGIN = { username: 'stepan', password: 'janas' };
 
-// DEKLARACE STRUKTURÁLNÍCH PROMĚNNÝCH NA SAMÉM ZAČÁTKU (Prevence ReferenceError)
+// Deklarace globálních referencí pro eliminaci ReferenceError
 let desktopIcons, windowsLayer, taskbarApps, startMenu, startButton, clock, loginScreen, loginForm, loginError;
 
 const sys_state = {
@@ -30,7 +23,7 @@ const sys_state = {
   fs: {
     'Home/Welcome.txt': 'System core initialized successfully.\nArchitecture: WebOS ARM-V8 Virtual Kernel.',
     'Documents/Projekt.txt': '1. Virtual DOM Allocation\n2. Hardware Accelerated Layers',
-    'Ucebnice/Strana_1_Zakladni_Konverzace.txt': '=== STRANA 1: ZÁKLADNÍ KONVERZACE V RESTAURACI ===\n\n- Good evening. A table for two, please. (Dobrý večer. Stůl pro dva, prosím.)\n- Do you have a reservation? (Máte rezervaci?)\n- Yes, under the name Stepan. (Ano, na jméno Štěpán.)\n- Follow me, please. Here is your table. (Následujte mě, prosím. Zde je váš stůl.)\n- Could we have the menu, please? (Mohli bychom dostat jídelní lístek, prosím?)\n- Are you ready to order? (Máte vybráno? / Jste připraveni objednat?)\n- We need a few more minutes. (Potřebujeme ještě several minut.)',
+    'Ucebnice/Strana_1_Zakladni_Konverzace.txt': '=== STRANA 1: ZÁKLADNÍ KONVERZACE V RESTAURACI ===\n\n- Good evening. A table for two, please. (Dobrý večer. Stůl pro dva, prosím.)\n- Do you have a reservation? (Máte rezervaci?)\n- Yes, under the name Stepan. (Ano, na jméno Štěpán.)\n- Follow me, please. Here is your table. (Následujte mě, prosím. Zde je váš stůl.)\n- Could we have the menu, please? (Mohli bychom dostat jídelní lístek, prosím?)\n- Are you ready to order? (Máte vybráno? / Jste připraveni objednat?)\n- We need a few more minutes. (Potřebujeme ještě několik minut.)',
     'Ucebnice/Strana_2_Objednavani_Jidla.txt': '=== STRANA 2: OBJEDNÁVÁNÍ JÍDLA (ORDERING FOOD) ===\n\n- What do you recommend? (Co nám doporučíte?)\n- I would like to order the main course. (Chtěl(a) bych si objednat hlavní chod.)\n- I will have the steak with potatoes. (Dám si steak s bramborami.)\n- Soup of the day (Polévka dne)\n- Appetizer / Starter (Předkrm)\n- Main course / Side dish (Hlavní chod / Příloha)\n- Is this dish spicy? (Je toto jídlo pálivé?)\n- I am a vegetarian. (Jsem vegetarián/ka.)',
     'Ucebnice/Strana_3_Napoje_A_Dezerty.txt': '=== STRANA 3: NÁPOJE A DEZERTY (DRINKS & DESSERTS) ===\n\n- What would you like to drink? (Co si dáte k pití?)\n- Still water, please. (Neperlivou vodu, prosím.)\n- Sparkling water (Perlivá voda)\n- Orange/Apple juice (Pomerančový/Jablečný džus)\n- Beer / Wine (Red, White) (Pivo / Víno - červené, bílé)\n- Tea / Coffee (Latte, Espresso) (Čaj / Káva)\n- For dessert, I will have the chocolate cake. (Jako dezert si dám čokoládový dort.)\n- Ice cream (Zmrzlina)',
     'Ucebnice/Strana_4_Placeni_A_Ucet.txt': '=== STRANA 4: PLACENÍ A ÚČET (THE BILL) ===\n\n- Could we have the bill, please? / Check, please? (Mohli bychom dostat účet, prosím?)\n- Together or separately? (Dohromady nebo zvlášť?)\n- Together, please. (Dohromady, prosím.)\n- Can I pay by credit card? (Mohu platit kartou?)\n- We only accept cash. (Přijímáme pouze hotovost.)\n- Keep the change. (Drobné si nechte - spropitné.)\n- Service charge / Tip (Spropitné - standardně 15 % až 20 %)\n- Included / Not included (Zahrnuto / Nezahrnuto v ceně)',
@@ -125,6 +118,7 @@ function bootDesktop() {
   }
   updateClock(); setInterval(updateClock, 1000);
 }
+
 // ============================================================================
 // MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 3 ze 4
 // ============================================================================
