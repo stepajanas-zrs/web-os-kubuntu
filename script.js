@@ -120,7 +120,7 @@ function bootDesktop() {
 }
 
 // ============================================================================
-// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 3 ze 4
+// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 3 ze 4 (FIXED TASKBAR)
 // ============================================================================
 function requestPid(app_type) {
   if (!windowsLayer) return;
@@ -146,7 +146,6 @@ function switchFocus(pid) {
   renderTaskbar();
 }
 
-// ARM optimalizace: Plynulé přesouvání oken tahem myši bez lagování
 function bindHardwareDrag(element, win) {
   const header = element.querySelector('.window-header'); if (!header) return;
   let ox = 0, oy = 0;
@@ -178,15 +177,17 @@ function registerAndSpawn(node, win) {
 
 function renderTaskbar() {
   if (!taskbarApps) return; taskbarApps.innerHTML = '';
+  // OPRAVA: Definice chybějícího paměťového fragmentu pro stabilní chod lišty
+  const frag = document.createDocumentFragment();
   for (let [id, win] of sys_state.m_windows) {
     const btn = document.createElement('button'); btn.className = `taskbar-item ${sys_state.active_pid === id ? 'active' : ''}`;
     btn.textContent = win.title; btn.addEventListener('click', () => { if (win.minimized) { win.node.style.display = 'flex'; win.minimized = false; } switchFocus(id); });
     frag.appendChild(btn);
   }
+  taskbarApps.appendChild(frag);
 }
-
 // ============================================================================
-// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 4 ze 4
+// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 4 ze 4 (FIXED GAMES EMBED)
 // ============================================================================
 function allocateRenderLayer(win) {
   const node = document.createElement('div');
@@ -201,7 +202,6 @@ function allocateRenderLayer(win) {
 
   const content = node.querySelector('.window-content');
   
-  // --- 1. KALKULAČKA ---
   if (win.type === 'calculator') {
     content.innerHTML = `
       <div class="app-content calculator-content" style="gap:6px; overflow-y:auto;">
@@ -222,24 +222,21 @@ function allocateRenderLayer(win) {
         </div>
         <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:2px 0;">🌌 Fyzikální konstanty</div>
         <div class="calculator-grid" style="grid-template-columns: repeat(4, 1fr); grid-template-rows: 34px; flex:none; gap:5px;">
-          <button class="calc-key operator" data-v="3.14159265">π</button><button class="calc-key operator" data-v="2.71828182">e</button>
-          <button class="calc-key operator" data-v="9.81">g</button><button class="calc-key operator" data-v="299792458">c</button>
+          <button class="calc-key operator" data-v="3.14159265">π</button><button class="calc-key operator" data-v="2.71828182">e</button><button class="calc-key operator" data-v="9.81">g</button><button class="calc-key operator" data-v="299792458">c</button>
         </div>
       </div>`;
   }
 
-  // --- 2. NOTEPAD ---
   if (win.type === 'notepad') {
     content.innerHTML = `<div class="app-content calculator-content"><textarea class="notepad-editor" id="txt-${win.id}" style="width:100%;height:calc(100% - 40px);">${sys_state.fs['Home/Welcome.txt']}</textarea><div class="secondary-bar"><button class="primary-btn" id="save-${win.id}">Uložit soubor</button></div></div>`;
     const area = document.getElementById(`txt-${win.id}`); const sBtn = document.getElementById(`save-${win.id}`);
     if (sBtn && area) { sBtn.addEventListener('click', () => { sys_state.fs['Home/Welcome.txt'] = area.value; localStorage.setItem('web-os-note', area.value); }); }
   }
 
-  // --- 3. FILES ---
   if (win.type === 'files') {
     content.innerHTML = `<div class="app-content"><div class="files-layout"><div class="file-list"><ul id="ul-${win.id}"></ul></div><div class="file-preview"><pre id="pre-${win.id}"></pre></div></div></div>`;
     const renderExplorer = () => {
-      const ul = document.getElementById(`ul-${win.id}`); const pre = document.getElementById(`pre-${win.id}`); if (!ul || !pre) return; ul.innerHTML = '';
+      const ul = document.getElementById覆 || document.getElementById(`ul-${win.id}`); const pre = document.getElementById(`pre-${win.id}`); if (!ul || !pre) return; ul.innerHTML = '';
       Object.keys(sys_state.fs).forEach(path => {
         const li = document.createElement('li'); const btn = document.createElement('button'); btn.textContent = path; if (path === sys_state.selectedFile) btn.className = 'active';
         btn.addEventListener('click', () => { sys_state.selectedFile = path; renderExplorer(); }); li.appendChild(btn); ul.appendChild(li);
@@ -249,7 +246,6 @@ function allocateRenderLayer(win) {
     renderExplorer();
   }
 
-  // --- 4. UČEBNICE ---
   if (win.type === 'textbook') {
     content.innerHTML = `
       <div class="app-content" style="padding:0; height:100%;">
@@ -272,12 +268,12 @@ function allocateRenderLayer(win) {
       </div>`;
   }
 
-  // --- 5. HERNÍ CENTRUM ---
+  // OPRAVA HERNÍHO SUBSYSTÉMU: Využití speciální embed verze pro obcházení sameorigin restrikcí
   if (win.type === 'games') {
     content.innerHTML = `
-      <div class="app-content" style="padding:0; height:100%; background:#000; overflow:hidden;">
+      <div class="app-content" style="padding:0; height:100%; background:#111522; overflow:hidden;">
         <iframe src="https://crazygames.com" 
-                style="width:100%; height:100%; border:none; background:#000;" 
+                style="width:100%; height:100%; border:none; background:#111522;" 
                 allow="autoplay; gamepad; fullscreen" 
                 sandbox="allow-scripts allow-same-origin allow-popups allow-pointer-lock">
         </iframe>
