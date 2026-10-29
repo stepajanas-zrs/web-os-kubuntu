@@ -1,5 +1,5 @@
 // ============================================================================
-// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 1 ze 4 (OPRAVENÝ REGISTR)
+// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 1 ze 4
 // ============================================================================
 const APP_REGISTRY = {
   notepad: { title: 'Notepad', w: 540, h: 440 },
@@ -11,7 +11,7 @@ const APP_REGISTRY = {
 
 const LOGIN = { username: 'stepan', password: 'janas' };
 
-// Deklarace globálních referencí pro eliminaci ReferenceError
+// Globální reference na elementy
 let desktopIcons, windowsLayer, taskbarApps, startMenu, startButton, clock, loginScreen, loginForm, loginError;
 
 const sys_state = {
@@ -34,7 +34,7 @@ const sys_state = {
   }
 };
 // ============================================================================
-// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 2 ze 4 (FIXED CLOCK UTILS)
+// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 2 ze 4
 // ============================================================================
 function getAuthState() { return localStorage.getItem('web-os-auth') === 'true'; }
 function setAuthState(value) { localStorage.setItem('web-os-auth', value ? 'true' : 'false'); }
@@ -64,7 +64,6 @@ function initLogin() {
         e.preventDefault();
         const u = document.getElementById('username').value.trim().toLowerCase();
         const p = document.getElementById('password').value.trim().toLowerCase();
-        
         if (u === LOGIN.username && p === LOGIN.password) {
           setAuthState(true);
           if (loginScreen) loginScreen.classList.add('hidden');
@@ -126,9 +125,8 @@ function bootDesktop() {
   }
   updateClock(); setInterval(updateClock, 1000);
 }
-
 // ============================================================================
-// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 3 ze 4 (FIXED TASKBAR)
+// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 3 ze 4
 // ============================================================================
 function requestPid(app_type) {
   if (!windowsLayer) return;
@@ -185,7 +183,6 @@ function registerAndSpawn(node, win) {
 
 function renderTaskbar() {
   if (!taskbarApps) return; taskbarApps.innerHTML = '';
-  // OPRAVA: Definice chybějícího paměťového fragmentu pro stabilní chod lišty
   const frag = document.createDocumentFragment();
   for (let [id, win] of sys_state.m_windows) {
     const btn = document.createElement('button'); btn.className = `taskbar-item ${sys_state.active_pid === id ? 'active' : ''}`;
@@ -195,7 +192,7 @@ function renderTaskbar() {
   taskbarApps.appendChild(frag);
 }
 // ============================================================================
-// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 4 ze 4 (CLEANED)
+// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 4 ze 4
 // ============================================================================
 function allocateRenderLayer(win) {
   const node = document.createElement('div');
@@ -230,7 +227,8 @@ function allocateRenderLayer(win) {
         </div>
         <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:2px 0;">🌌 Fyzikální konstanty</div>
         <div class="calculator-grid" style="grid-template-columns: repeat(4, 1fr); grid-template-rows: 34px; flex:none; gap:5px;">
-          <button class="calc-key operator" data-v="3.14159265">π</button><button class="calc-key operator" data-v="2.71828182">e</button><button class="calc-key operator" data-v="9.81">g</button><button class="calc-key operator" data-v="299792458">c</button>
+          <button class="calc-key operator" data-v="3.14159265">π</button><button class="calc-key operator" data-v="2.71828182">e</button>
+          <button class="calc-key operator" data-v="9.81">g</button><button class="calc-key operator" data-v="299792458">c</button>
         </div>
       </div>`;
   }
@@ -298,3 +296,5 @@ function buildDesktopIcons() {
     btn.addEventListener('click', () => requestPid(app)); desktopIcons.appendChild(btn);
   });
 }
+
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initLogin); } else { initLogin(); }
