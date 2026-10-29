@@ -34,10 +34,18 @@ const sys_state = {
   }
 };
 // ============================================================================
-// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 2 ze 4
+// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 2 ze 4 (FIXED CLOCK UTILS)
 // ============================================================================
 function getAuthState() { return localStorage.getItem('web-os-auth') === 'true'; }
 function setAuthState(value) { localStorage.setItem('web-os-auth', value ? 'true' : 'false'); }
+
+function updateClock() { 
+  if (clock) clock.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); 
+}
+
+function escapeHtml(text) { 
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); 
+}
 
 function initLogin() {
   loginScreen = document.getElementById('login-screen');
@@ -187,7 +195,7 @@ function renderTaskbar() {
   taskbarApps.appendChild(frag);
 }
 // ============================================================================
-// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 4 ze 4 (FIXED GAMES EMBED)
+// MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED CORE) - ČÁST 4 ze 4 (CLEANED)
 // ============================================================================
 function allocateRenderLayer(win) {
   const node = document.createElement('div');
@@ -236,7 +244,7 @@ function allocateRenderLayer(win) {
   if (win.type === 'files') {
     content.innerHTML = `<div class="app-content"><div class="files-layout"><div class="file-list"><ul id="ul-${win.id}"></ul></div><div class="file-preview"><pre id="pre-${win.id}"></pre></div></div></div>`;
     const renderExplorer = () => {
-      const ul = document.getElementById覆 || document.getElementById(`ul-${win.id}`); const pre = document.getElementById(`pre-${win.id}`); if (!ul || !pre) return; ul.innerHTML = '';
+      const ul = document.getElementById(`ul-${win.id}`); const pre = document.getElementById(`pre-${win.id}`); if (!ul || !pre) return; ul.innerHTML = '';
       Object.keys(sys_state.fs).forEach(path => {
         const li = document.createElement('li'); const btn = document.createElement('button'); btn.textContent = path; if (path === sys_state.selectedFile) btn.className = 'active';
         btn.addEventListener('click', () => { sys_state.selectedFile = path; renderExplorer(); }); li.appendChild(btn); ul.appendChild(li);
@@ -268,7 +276,6 @@ function allocateRenderLayer(win) {
       </div>`;
   }
 
-  // OPRAVA HERNÍHO SUBSYSTÉMU: Využití speciální embed verze pro obcházení sameorigin restrikcí
   if (win.type === 'games') {
     content.innerHTML = `
       <div class="app-content" style="padding:0; height:100%; background:#111522; overflow:hidden;">
@@ -291,5 +298,3 @@ function buildDesktopIcons() {
     btn.addEventListener('click', () => requestPid(app)); desktopIcons.appendChild(btn);
   });
 }
-
-if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initLogin); } else { initLogin(); }
