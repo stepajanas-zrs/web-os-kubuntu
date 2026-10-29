@@ -5,6 +5,14 @@ const APP_REGISTRY = {
   notepad: { title: 'Notepad', w: 540, h: 440 },
   files: { title: 'Files', w: 720, h: 480 },
   calculator: { title: 'KCalc (Kalkulačka)', w: 340, h: 440 },
+  textbook: { title: 'Učebnice a slovníky', w: 680, h: 500 },
+  games: { title: 'CrazyGames Centrum', w: 850, h: 550 } // Přidaná aplikace her
+};
+
+const APP_REGISTRY = {
+  notepad: { title: 'Notepad', w: 540, h: 440 },
+  files: { title: 'Files', w: 720, h: 480 },
+  calculator: { title: 'KCalc (Kalkulačka)', w: 340, h: 440 },
   textbook: { title: 'Učebnice a slovníky', w: 680, h: 500 }
 };
 
@@ -199,6 +207,7 @@ function allocateRenderLayer(win) {
 
   const content = node.querySelector('.window-content');
   
+  // --- 1. KALKULAČKA ---
   if (win.type === 'calculator') {
     content.innerHTML = `
       <div class="app-content calculator-content" style="gap:6px; overflow-y:auto;">
@@ -219,17 +228,20 @@ function allocateRenderLayer(win) {
         </div>
         <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; margin:2px 0;">🌌 Fyzikální konstanty</div>
         <div class="calculator-grid" style="grid-template-columns: repeat(4, 1fr); grid-template-rows: 34px; flex:none; gap:5px;">
-          <button class="calc-key operator" data-v="3.14159265">π</button><button class="calc-key operator" data-v="2.71828182">e</button><button class="calc-key operator" data-v="9.81">g</button><button class="calc-key operator" data-v="299792458">c</button>
+          <button class="calc-key operator" data-v="3.14159265">π</button><button class="calc-key operator" data-v="2.71828182">e</button>
+          <button class="calc-key operator" data-v="9.81">g</button><button class="calc-key operator" data-v="299792458">c</button>
         </div>
       </div>`;
   }
 
+  // --- 2. NOTEPAD ---
   if (win.type === 'notepad') {
     content.innerHTML = `<div class="app-content calculator-content"><textarea class="notepad-editor" id="txt-${win.id}" style="width:100%;height:calc(100% - 40px);">${sys_state.fs['Home/Welcome.txt']}</textarea><div class="secondary-bar"><button class="primary-btn" id="save-${win.id}">Uložit soubor</button></div></div>`;
     const area = document.getElementById(`txt-${win.id}`); const sBtn = document.getElementById(`save-${win.id}`);
     if (sBtn && area) { sBtn.addEventListener('click', () => { sys_state.fs['Home/Welcome.txt'] = area.value; localStorage.setItem('web-os-note', area.value); }); }
   }
 
+  // --- 3. FILES ---
   if (win.type === 'files') {
     content.innerHTML = `<div class="app-content"><div class="files-layout"><div class="file-list"><ul id="ul-${win.id}"></ul></div><div class="file-preview"><pre id="pre-${win.id}"></pre></div></div></div>`;
     const renderExplorer = () => {
@@ -243,6 +255,7 @@ function allocateRenderLayer(win) {
     renderExplorer();
   }
 
+  // --- 4. UČEBNICE ---
   if (win.type === 'textbook') {
     content.innerHTML = `
       <div class="app-content" style="padding:0; height:100%;">
@@ -265,12 +278,24 @@ function allocateRenderLayer(win) {
       </div>`;
   }
 
+  // --- 5. HERNÍ CENTRUM ---
+  if (win.type === 'games') {
+    content.innerHTML = `
+      <div class="app-content" style="padding:0; height:100%; background:#000; overflow:hidden;">
+        <iframe src="https://crazygames.com" 
+                style="width:100%; height:100%; border:none; background:#000;" 
+                allow="autoplay; gamepad; fullscreen" 
+                sandbox="allow-scripts allow-same-origin allow-popups allow-pointer-lock">
+        </iframe>
+      </div>`;
+  }
+
   registerAndSpawn(node, win);
 }
 
 function buildDesktopIcons() {
   if (!desktopIcons) return; desktopIcons.innerHTML = '';
-  [['Notepad', 'notepad', '✎'], ['Files', 'files', '📁'], ['Calculator', 'calculator', '🧮'], ['Učebnice', 'textbook', '📚']].forEach(([name, app, em]) => {
+  [['Notepad', 'notepad', '✎'], ['Files', 'files', '📁'], ['Calculator', 'calculator', '🧮'], ['Učebnice', 'textbook', '📚'], ['Hry', 'games', '🎮']].forEach(([name, app, em]) => {
     const btn = document.createElement('button'); btn.className = 'desktop-icon';
     btn.innerHTML = `<div class="icon">${em}</div><div class="label">${name}</div>`;
     btn.addEventListener('click', () => requestPid(app)); desktopIcons.appendChild(btn);
