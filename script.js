@@ -64,8 +64,9 @@ function initLogin() {
   if (loginScreen) loginScreen.classList.add('hidden'); bootDesktop();
 }
 
+// ============================================================================
 // MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED) - ČÁST B1: ENGINE MECHANISMUS
-
+// ============================================================================
 function requestPid(app_type) {
   if (!windowsLayer) return;
   for (let [pid, win] of sys_state.m_windows) {
@@ -124,9 +125,9 @@ function registerAndSpawn(node, win) {
   if (win.type === 'textbook' && window.initTextbookApp) window.initTextbookApp(win.id, node);
   setTimeout(() => node.classList.add('window-open'), 10); renderTaskbar(); switchFocus(win.id);
 }
-
+// ============================================================================
 // MICRO-KERNEL WEB OS (ARM V8 OPTIMIZED) - ČÁST B2: GRAPHICS SHADERS & BOOT
-
+// ============================================================================
 function renderTaskbar() {
   if (!taskbarApps) return; taskbarApps.innerHTML = '';
   const frag = document.createDocumentFragment();
