@@ -274,15 +274,34 @@ function allocateRenderLayer(win) {
           <div style="font-size:0.75rem;color:var(--text-muted);font-weight:bold;">SLOŽKA PYGAME_HRY</div>
           ${buttonsHtml}
         </div>
-        <div class="pg-screen" style="flex:1;background:#000;display:flex;align-items:center;justify-content:center;">
-          <p style="color:var(--text-muted);">Vyberte hru ze složky vlevo</p>
+        <div class="pg-screen" style="flex:1;background:#0a0f1d;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;">
+          <p style="color:var(--text-muted);">Vyberte hru ze seznamu vlevo.<br><small>(Vyžaduje spuštění přes Live Server / localhost)</small></p>
         </div>
       </div>`;
+      
     content.querySelectorAll('.pg-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         content.querySelectorAll('.pg-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        content.querySelector('.pg-screen').innerHTML = `<iframe src="${btn.dataset.path}" style="width:100%;height:100%;border:none;" allow="autoplay;fullscreen"></iframe>`;
+        const gamePath = btn.dataset.path;
+        
+        // Kontrola existence souboru před spuštěním v okně
+        fetch(gamePath)
+          .then(res => {
+            if (!res.ok) throw new Error('Soubor nenalezen');
+            content.querySelector('.pg-screen').innerHTML = `
+              <iframe src="${gamePath}" style="width:100%;height:100%;border:none;" allow="autoplay;fullscreen"></iframe>
+            `;
+          })
+          .catch(() => {
+            content.querySelector('.pg-screen').innerHTML = `
+              <div style="color:#ef4444;max-width:320px;">
+                <h3 style="margin-bottom:8px;">⚠️ Hra nenalezena</h3>
+                <p style="font-size:0.85rem;color:var(--text-muted);">V projektu chybí zkompilovaný soubor na cestě:<br><code style="color:#60a5fa;">${gamePath}</code></p>
+                <p style="font-size:0.8rem;color:var(--text-muted);margin-top:10px;">Přeložte hru pomocí <b>pygbag</b> a nahrajte ji do této složky.</p>
+              </div>
+            `;
+          });
       });
     });
   } else if (win.type === 'calculator') {
