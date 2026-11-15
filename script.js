@@ -13,6 +13,7 @@ const APP_REGISTRY = {
 // SEZNAM VAŠICH HER ZE SLOŽKY "pygame_hry"
 const PYGAME_LIST = [
   { name: 'Moje Hra 1', path: 'moje_hry/snake/index.html' },
+  { name: 'Aimy', path: 'html/aimy/index.html' },
 ];
 
 const LOGIN = { username: 'stepan', password: 'janas' };
