@@ -15,6 +15,7 @@ const PYGAME_LIST = [
   { name: 'Moje Hra 1', path: 'moje_hry/snake/index.html' },
   { name: 'Aimy', path: 'html/aimy/index.html' },
   { name: 'folow_block', path: 'html/folow_block/index.html' },
+  { name: 'subway', path: 'html/subway/index.html' },
 ];
 
 const LOGIN = { username: 'stepan', password: 'janas' };
