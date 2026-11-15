@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subway Surfers - HTML5</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="gameContainer">
+    <canvas id="gameCanvas" width="450" height="750"></canvas>
+    <div id="ui">
+        <div class="badge" id="scoreBadge">0</div>
+        <div class="badge" id="coinBadge">🪙 0</div>
+    </div>
+    <div id="overlay">
+        <h1 id="titleText">SUBWAY RUNNER</h1>
+        <p id="descText">Vyhýbej se vlakům, přeskakuj bariéry a sbírej mince!</p>
+        <button id="startBtn">HRÁT</button>
+        <div class="controls-hint">
+            Ovládání: Šipky / WASD nebo přejetí myší/prstem<br>
+            ⬅️ ➡️ Pruh | ⬆️ Skok | ⬇️ Podklouznutí
+        </div>
+    </div>
+</div>
+
+<script src="graphics.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
