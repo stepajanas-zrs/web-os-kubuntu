@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>Aimy – AI web </title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    html, body { height: 100%; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      width: 100vw;
+      height: 100vh;
+      box-sizing: border-box;
+      font-family: sans-serif;
+      background: #191c1f;
+      color: #e8f0fe;
+      transition: background 0.2s, color 0.2s;
+      overflow-x: hidden;
+    }
+    #container {
+      min-height: 100vh;
+      width: 100vw;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+      background: none;
+      box-shadow: none;
+      color: inherit;
+    }
+    .main-content {
+      width: 100vw;
+      max-width: 680px;
+      flex: none;
+      margin-top: 36px;
+    }
+    #user-panel {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom:14px;
+      flex-wrap: wrap;
+    }
+    #user-panel label { font-weight: bold;}
+    #username {
+      width:120px;
+      padding:5px 7px;
+      border-radius: 6px;
+      border: 1px solid #33394d;
+      background: #23262b;
+      color: #e8f0fe;
+    }
+    #username::placeholder { color: #889; }
+    #editable {
+      min-height: 82px;
+      border: 2px solid #33394d;
+      border-radius: 10px;
+      padding: 22px;
+      background: #23262b;
+      cursor: pointer;
+      transition: border 0.2s, background 0.2s, color 0.2s, font-size 0.2s;
+      font-size: 1.1em;
+      color: #e8f0fe;
+      width: 100%;
+      margin-bottom: 18px;
+    }
+    #editable:focus { outline: none; border-color: #79f; }
+    #ai-panel {
+      background: #202a34;
+      padding: 18px 14px 14px 14px;
+      border-radius: 8px;
+      margin-bottom: 28px;
+      width: 100%;
+      box-sizing: border-box;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+    #ai-panel label { flex: 1 1 280px; }
+    #ai-prompt {
+      width: 70%;
+      max-width: 370px;
+      padding: 6px;
+    }
+    .btn {
+      padding:7px 18px;
+      border-radius:6px;
+      border:none;
+      background:#567FFE;
+      color:#fff;
+      font-weight:bold;
+      cursor:pointer
+    }
+    .btn:disabled { background:#ccc; }
+    #loading {color:#79f;}
+    .info {
+      color: #bbb;
+      margin-top: 16px;
+      font-size: 90%;
+      text-align: center;
+    }
+    .chatbox {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      width: 100vw;
+      max-width: 680px;
+      align-items: stretch;
+    }
+    .chatbox h3 { margin: 24px 0 10px 3px; font-size: 1.17em; color: #89e; }
+    .chat-messages {
+      background: #22252c;
+      border-radius: 9px;
+      min-height: 100px;
+      max-height: 36vh;
+      overflow-y: auto;
+      padding: 14px 12px 10px 12px;
+      box-shadow: 0 2px 10px rgba(80,92,192,0.08);
+      margin-bottom: 7px;
+    }
+    .msg { margin: 0 0 10px 0; }
+    .msg.user { text-align: right; }
+    .msg.aimy { text-align: left; }
+    .bubble {
+      display:inline-block;
+      padding:10px 16px;
+      border-radius: 16px;
+      max-width:80%; font-size:1em;
+    }
+    .msg.user .bubble {
+      background: #414a68;
+      color: #e8f0fe;
+      border-bottom-right-radius: 6px;
+    }
+    .msg.aimy .bubble {
+      background: #1b3e2c;
+      color:#e5ffe0;
+      border-bottom-left-radius:6px;
+    }
+    .chat-form-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .chat-input {
+      width:68%;
+      min-width: 190px;
+      max-width: 450px;
+      padding: 7px;
+      margin-right: 9px;
+      flex: 1 1 300px;
+    }
+    .gemini-light {
+      background: #f5f7fa !important;
+      color: #141414 !important;
+    }
+    .gemini-light #container { background: #f5f7fa !important; color: #141414 !important;}
+    .gemini-light .main-content { background: none !important; color: #141414 !important;}
+    .gemini-light #editable { background: #faffeb !important; color: #141414 !important; border-color: #dde !important; }
+    .gemini-light #username { background: #fff !important; color: #222 !important; border: 1px solid #dde !important; }
+    .gemini-light #ai-panel { background: #f4f4ff !important; }
+    .gemini-light .chat-messages { background: #f6f6fd !important; }
+    .gemini-light .msg.user .bubble { background: #eaefff !important; color: #245 !important; }
+    .gemini-light .msg.aimy .bubble { background: #dbfadd !important; color: #22554b !important;}
+    .song-text { font-family: 'Georgia',serif; font-style: italic; color: #c6ffc0; background: #1e2923; border-radius:7px; display:block; line-height:1.6; margin:11px 0; padding:7px 10px 8px 18px; }
+    .gemini-light .song-text { color: #1a4b2b; background: #f6fff5; }
+    @media (max-width: 800px) {
+      .main-content, .chatbox {max-width:98vw;}
+    }
+    @media (max-width: 600px) {
+      .main-content, .chatbox { max-width: 99vw;}
+      #ai-prompt, .chat-input { width:96%; min-width: unset;}
+      #editable {padding:14px;}
+      #user-panel {flex-direction:column; align-items:start;}
+      #username {width:99%;}
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div class="main-content">
+      <h2 style="text-align:center; margin-bottom:14px;">Aimy &ndash; AI web </h2>
+
+      <!-- Uživatelský panel -->
+      <div id="user-panel">
+        <label for="username">Uživatel:</label>
+        <input id="username" placeholder="Zadejte jméno"/>
+        <button id="save-user" class="btn">Uložit na uživatele</button>
+        <button id="load-user" class="btn">Načíst uživatele</button>
+      </div>
+
+      <div id="editable" contenteditable="true">
+        Toto je obsah, který můžete měnit ručně&mdash;nebo požádejte Aimy, aby změnila styl, barvu, režim nebo text.
+      </div>
+      <div id="ai-panel">
+        <label>
+          <b>Instrukce pro Aimy:</b>
+          <input id="ai-prompt" placeholder="Tmavý režim, červený text, větší písmo, ..." />
+        </label>
+        <button class="btn" id="ai-btn">Upravit pomocí Aimy</button>
+        <span id="loading" style="display:none">Aimy přemýšlí...</span>
+      </div>
+    </div>
+
+    <div class="chatbox">
+      <h3>💬 Chat s Aimy </h3>
+      <div class="chat-messages" id="chat-messages"></div>
+      <form id="chat-form" autocomplete="off" class="chat-form-row">
+        <input class="chat-input" id="chat-input" placeholder="Napište dotaz pro Aimy nebo o text písně..." />
+        <button class="btn" id="chat-send" type="submit">Odeslat</button>
+      </form>
+    </div>
+
+    <div class="info">
+      ✨ Každý uživatel má vlastní uložený stav. Stačí napsat jméno, kliknout "Uložit", jindy načíst.<br>
+      Povídejte si s Aimy, měňte vzhled i skládání písniček!
+    </div>
+  </div>
+  <script>
+    // ----- Uložit/načíst na uživatele (LocalStorage) -----
+    document.getElementById('save-user').onclick = function() {
+      const username = document.getElementById('username').value.trim();
+      if (!username) return alert('Nejprve zadejte jméno uživatele!');
+      const backup = {
+        editable: document.getElementById('editable').innerHTML,
+        chat: Array.from(document.querySelectorAll('.msg.user,.msg.aimy')).map(m =>
+          ({from: m.classList.contains('user') ? 'user' : 'aimy', text: m.querySelector('.bubble').innerHTML}))
+      };
+      localStorage.setItem('aimy-user-' + username.toLowerCase(), JSON.stringify(backup));
+      alert('Obsah pro uživatele "' + username + '" byl uložen v tomto prohlížeči.');
+    };
+
+    document.getElementById('load-user').onclick = function() {
+      const username = document.getElementById('username').value.trim();
+      if (!username) return alert('Nejprve zadejte jméno uživatele!');
+      const backup = JSON.parse(localStorage.getItem('aimy-user-' + username.toLowerCase()) || '{}');
+      if (!backup.editable && !backup.chat) {
+        alert('Žádná uložená data pro "' + username + '".');
+        return;
+      }
+      document.getElementById('editable').innerHTML = backup.editable || '';
+      // Obnova chatu:
+      const chatMessages = document.getElementById('chat-messages');
+      chatMessages.innerHTML = '';
+      if (backup.chat) backup.chat.forEach(msg => {
+        const div = document.createElement('div');
+        div.className = 'msg ' + msg.from;
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.innerHTML = msg.text;
+        div.appendChild(bubble);
+        chatMessages.appendChild(div);
+      });
+    };
+
+    // ----- Styling a úpravy obsahu -----
+    const editableDiv = document.getElementById('editable');
+    const aiPromptInput = document.getElementById('ai-prompt');
+    const aiBtn = document.getElementById('ai-btn');
+    const loading = document.getElementById('loading');
+    const body = document.body;
+
+    // Výchozí režim: tmavý (dark)
+    window.addEventListener("DOMContentLoaded", () => {
+      body.classList.remove("gemini-light");
+    });
+
+    function fakeAIStyling(content, prompt) {
+      // Režimy
+      if (/tmav(ý|y)? ?režim|dark|gemini|čern[ýáí]?|noční/i.test(prompt)) {
+        body.classList.remove("gemini-light");
+      } 
+      if (/světl(ý|y)? ?režim|světlý|bíl[ýáí]?|light|classic|výchozí|standardní|denní/i.test(prompt)) {
+        body.classList.add("gemini-light");
+      }
+      if (/gemini/i.test(prompt)) {
+        body.classList.remove("gemini-light");
+      }
+      // Textové úpravy přímo (ukázky)
+      if (/angli(c|č)tina/i.test(prompt)) 
+        editableDiv.textContent = "In English: " + content;
+      else if (/vesele|radost/i.test(prompt)) 
+        editableDiv.textContent = content + " 😊🌞";
+      else if (/příklad|examples?/i.test(prompt)) 
+        editableDiv.innerHTML = content + "<br><b>Například:</b> Toto je ukázka využití Aimy!";
+      else if (/shrnutí|shrnutí/i.test(prompt))
+        editableDiv.textContent = "Shrnutí: " + content.split(' ').slice(0, 7).join(' ') + "...";
+      else if (/tučně|bold/i.test(prompt)) 
+        editableDiv.style.fontWeight = "bold";
+      // Stylové úpravy
+      if (/červen[ýáí]/i.test(prompt)) editableDiv.style.color = "red";
+      if (/modr[ýáé]? text/i.test(prompt)) editableDiv.style.color = "darkblue";
+      if (/modr[ýáé]?/i.test(prompt) && !/pozad[ií]/i.test(prompt)) editableDiv.style.color = "blue";
+      if (/zelen[ýáé]?/i.test(prompt)) editableDiv.style.color = "green";
+      if (/čern[ýáí]?/i.test(prompt)) editableDiv.style.color = "black";
+      if (/oranžov[ýáé]?/i.test(prompt)) editableDiv.style.color = "orange";
+      if (/fialov[ýáé]?/i.test(prompt)) editableDiv.style.color = "purple";
+      if (/žlut[ýáé]?/i.test(prompt)) editableDiv.style.color = "#e3bf10";
+      // Pozadí
+      if (/modr[ýáé]? pozad[ií]/i.test(prompt)) editableDiv.style.background = "#e6eeff";
+      if (/červen[ýáé]? pozad[ií]/i.test(prompt)) editableDiv.style.background = "#ffe6e6";
+      if (/žlut[ýáé]? pozad[ií]/i.test(prompt)) editableDiv.style.background = "#fffcc8";
+      if (/zelen[ýáé]? pozad[ií]/i.test(prompt)) editableDiv.style.background = "#e6ffe6";
+      if (/bílé? pozad[ií]/i.test(prompt)) editableDiv.style.background = "#fff";
+      // Velikost písma
+      if (/větš[íi]|zvětši/i.test(prompt)) editableDiv.style.fontSize = "2em";
+      if (/menš[íi]|zmenši/i.test(prompt)) editableDiv.style.fontSize = "0.9em";
+      // Zarovnání
+      if (/zarovn(ej)?( na)?\s*doprava/i.test(prompt)) editableDiv.style.textAlign = "right";
+      if (/zarovn(ej)?( na)?\s*doleva/i.test(prompt)) editableDiv.style.textAlign = "left";
+      if (/zarovn(ej)?( na)?\s*střed|doprostřed/i.test(prompt)) editableDiv.style.textAlign = "center";
+      // Rámeček
+      if (/rámeček|ohrani[čc]ení|border/i.test(prompt)) editableDiv.style.border = "3px solid #888";
+      // Reset stylů obsahu
+      if (/vzhled výchoz(í|ího)?|reset/i.test(prompt)) {
+        editableDiv.removeAttribute('style');
+        editableDiv.style.border = "";
+        editableDiv.style.background = "#23262b";
+        editableDiv.style.fontSize = "1.1em";
+        editableDiv.style.textAlign = "left";
+        editableDiv.style.fontWeight = "normal";
+        editableDiv.style.color = "#e8f0fe";
+      }
+      // Reset těla
+      if (/režim výchoz(í|ího)?|režim reset/i.test(prompt)) {
+        body.classList.remove("gemini-light");
+      }
+    }
+
+    aiBtn.onclick = async () => {
+      const content = editableDiv.textContent;
+      const prompt = aiPromptInput.value.trim();
+      if (!prompt) return alert('Napište nejprve požadavek pro Aimy!');
+      aiBtn.disabled = true;
+      loading.style.display = '';
+      setTimeout(() => {
+        fakeAIStyling(content, prompt);
+        aiBtn.disabled = false;
+        aiPromptInput.value = '';
+        loading.style.display = 'none';
+      }, 500);
+    };
+
+    // ----- Chat s Aimy -----
+    const chatForm = document.getElementById('chat-form');
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+
+    let isThinking = false;
+    function addMsg(text, user = "user", asHtml = false) {
+      const div = document.createElement('div');
+      div.className = 'msg ' + user;
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      if (asHtml) bubble.innerHTML = text;
+      else bubble.textContent = text;
+      div.appendChild(bubble);
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // --- Demo text písní podle zadání ---
+    function generateDemoSongText(topic, genre="píseň") {
+      if (/rap/i.test(genre)) {
+        return `<span class="song-text">Yeah!<br>
+Venku ${topic} jede, <br>
+Rýmů proud, co nikdy nesjede.<br>
+Škola, město nebo klidná ves,<br>
+Aimy ti skládá pravý rapový les!<br>
+</span>`;
+      }
+      if (/balad|balada/i.test(genre)) {
+        return `<span class="song-text">Tiše v srdci zní melodie tmavého lesa,<br>
+kde paprsek lásky na jehličí klesá.<br>
+S větrem zpívám tu jednoduchou věc,<br>
+v objetí stromů, kde není co ztrácet.</span>`;
+      }
+      // Základní stručný pop
+      return `<span class="song-text">
+Sluníčko svítí, <br>
+${topic.charAt(0).toUpperCase() + topic.slice(1)} letí,<br>
+Každý den nový dává mi sen,<br>
+s Aimy zpívám, ať je hezký den!<br>
+</span>`;
+    }
+
+    function fakeGeminiAimyAnswer(input) {
+      // SONG DETECTION
+      const songMatch = input.match(/(?:napiš|vytvoř|slož|vymysli|dej|složíš).*?(text|píseň|písničk(a|y|u|u)|balad[auy]?|rap)[a-zá-ž]*?(?: o | na | k | pro)?\s*([^?.!:;]+)?/i);
+      if (songMatch) {
+        const genre = songMatch[1];
+        const topic = songMatch[3]?.trim() || "radosti";
+        return (
+          `<b>Text ${genre}:</b><br>` +
+          generateDemoSongText(topic, genre)
+        );
+      }
+      // Styling prompt
+      fakeAIStyling(editableDiv.textContent, input);
+
+      if (/vtip/i.test(input)) return "Jak se jmenuje kočka programátora? <br><b>Git Micina!</b> 😸";
+      if (/ahoj|nazdar|čau/i.test(input)) return "Ahoj! Jak vám dnes mohu pomoci?";
+      if (/světl(ý|y)? režim|bílý/i.test(input)) return "Přepnula jsem na světlý režim!";
+      if (/tmav(ý|y)?|gemini|černý|noční/i.test(input)) return "Tady je tmavý režim ve stylu Gemini 😊";
+      if (/co je ai|co umíš|kdo jsi/i.test(input)) return "Jsem Aimy, AI pomocník pro úpravu textu i vzhledu, umím chat, písně i Gemini styling!";
+      if (/angli(c|č)tina|přelož.*english/i.test(input)) return "Of course! 😊 I can translate your texts into English.";
+      if (/motivac/i.test(input)) return "Každý den je nový začátek! Dokážete cokoliv, stačí chtít. 🚀";
+      if (/pozad[ií]/i.test(input)) return "Změnila jsem pozadí dle přání.";
+      if (/červen[ýáí]|modr[ýáí]|žlut[ýáí]|zelen[ýáí]|oranžov[ýáí]|fialov/i.test(input))
+        return "Barva změněna! Klidně zkuste ještě další :)";
+      if (/větší písmo/i.test(input)) return "Text je nyní větší, přečte si ho i babička!";
+      if (/příklad|examples?/i.test(input)) return "Například: Požádejte Aimy 'Zarovnej doprava' a hned to udělám.";
+      if (/shrnutí/i.test(input)) return "Tady je shrnutí: " + editableDiv.textContent.split(' ').slice(0, 7).join(' ') + "...";
+      if (/reset|vzhled výchozí/i.test(input)) return "Styly jsem nastavila zpět na výchozí.";
+      return "Díky za zprávu! Umím styling webu, odpovím i složím song. Zkuste „Napiš text písně o jaru“ nebo „vtip“!";
+    }
+
+    chatForm.onsubmit = e => {
+      e.preventDefault();
+      if (isThinking) return false;
+      const msg = chatInput.value.trim();
+      if (!msg) return false;
+      addMsg(msg, "user");
+      chatInput.value = "";
+      isThinking = true;
+      setTimeout(() => {
+        // Zjistíme, jestli je odpověď písňový text
+        const ans = fakeGeminiAimyAnswer(msg);
+        const asHtml = ans.includes("song-text") || ans.includes("<br>") || ans.includes("<b>");
+        addMsg(ans, "aimy", asHtml);
+        isThinking = false;
+      }, 650 + Math.random()*350);
+      return false;
+    };
+
+    // Povolit Enter = Odeslat
+    chatInput.onkeydown = e => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        chatForm.onsubmit(new Event('submit'));
+        e.preventDefault();
+      }
+    };
+  </script>
+</body>
+</html>
