@@ -7,7 +7,7 @@ const APP_REGISTRY = {
   calculator: { title: 'KCalc (Kalkulačka)', w: 340, h: 570 },
   textbook: { title: 'Učebnice a slovníky', w: 680, h: 500 },
   games: { title: 'CrazyGames Centrum', w: 850, h: 550 },
-  pygame: { title: 'Pygame Herní Složka', w: 820, h: 620 }
+  pygame: { title: 'Pygame Herní Složka', w: 960, h: 680 }
 };
 
 // SEZNAM VAŠICH HER ZE SLOŽKY "pygame_hry"
@@ -83,7 +83,7 @@ function bootDesktop() {
   updateClock(); setInterval(updateClock, 1000);
 }
 // ============================================================================
-// MICRO-KERNEL WEB OS - ČÁST 2 ZE 2 (OKNA, IKONY A APLIKACE)
+// MICRO-KERNEL WEB OS - ČÁST 2 ZE 2 (OKNA, FULLSCREEN A APLIKACE)
 // ============================================================================
 function requestPid(app_type) {
   if (!windowsLayer) return;
@@ -92,7 +92,7 @@ function requestPid(app_type) {
   }
   const meta = APP_REGISTRY[app_type]; if (!meta) return;
   const pid = `pid-${sys_state.next_pid++}`;
-  const win = { id: pid, type: app_type, title: meta.title, x: 100 + (sys_state.m_windows.size * 25), y: 80 + (sys_state.m_windows.size * 20), w: meta.w, h: meta.h, minimized: false };
+  const win = { id: pid, type: app_type, title: meta.title, x: 80 + (sys_state.m_windows.size * 25), y: 50 + (sys_state.m_windows.size * 20), w: meta.w, h: meta.h, minimized: false, maximized: false };
   allocateRenderLayer(win);
 }
 
@@ -131,12 +131,21 @@ function buildDesktopIcons() {
 function allocateRenderLayer(win) {
   const node = document.createElement('div'); node.className = 'window'; node.id = win.id;
   node.style.width = `${win.w}px`; node.style.height = `${win.h}px`; node.style.transform = `translate3d(${win.x}px, ${win.y}px, 0px)`;
-  node.innerHTML = `<div class="window-header"><div class="window-title">${win.title}</div><div class="window-controls"><button class="control-btn minimize" data-action="minimize" data-pid="${win.id}"></button><button class="control-btn close" data-action="close" data-pid="${win.id}"></button></div></div><div class="window-content"></div>`;
+  node.innerHTML = `
+    <div class="window-header">
+      <div class="window-title">${win.title}</div>
+      <div class="window-controls">
+        <button class="control-btn minimize" data-action="minimize" data-pid="${win.id}" title="Minimalizovat"></button>
+        <button class="control-btn maximize" data-action="maximize" data-pid="${win.id}" title="Celá obrazovka"></button>
+        <button class="control-btn close" data-action="close" data-pid="${win.id}" title="Zavřít"></button>
+      </div>
+    </div>
+    <div class="window-content"></div>`;
   const content = node.querySelector('.window-content');
 
   if (win.type === 'pygame') {
     const buttonsHtml = PYGAME_LIST.map(g => `<button class="subject-tab pg-btn" data-path="${g.path}">🐍 ${g.name}</button>`).join('');
-    content.innerHTML = `<div class="app-content" style="display:flex;padding:0;height:100%;"><div class="file-list" style="width:200px;padding:10px;border-right:1px solid var(--panel-border);display:flex;flex-direction:column;gap:6px;"><div style="font-size:0.75rem;color:var(--text-muted);font-weight:bold;">SLOŽKA PYGAME_HRY</div>${buttonsHtml}</div><div class="pg-screen" style="flex:1;background:#0a0f1d;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;"><p style="color:var(--text-muted);">Vyberte hru ze seznamu vlevo.</p></div></div>`;
+    content.innerHTML = `<div class="app-content" style="display:flex;padding:0;height:100%;"><div class="file-list" style="width:180px;padding:10px;border-right:1px solid var(--panel-border);display:flex;flex-direction:column;gap:6px;"><div style="font-size:0.75rem;color:var(--text-muted);font-weight:bold;">MOJE HRY</div>${buttonsHtml}</div><div class="pg-screen" style="flex:1;background:#0a0f1d;display:flex;align-items:center;justify-content:center;padding:0;"><p style="color:var(--text-muted);">Vyberte hru ze seznamu vlevo.</p></div></div>`;
     content.querySelectorAll('.pg-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         content.querySelectorAll('.pg-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active');
@@ -160,14 +169,22 @@ function allocateRenderLayer(win) {
   node.addEventListener('pointerdown', () => switchFocus(win.id));
   node.querySelectorAll('.control-btn').forEach(btn => btn.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (btn.dataset.action === 'close') { node.remove(); sys_state.m_windows.delete(win.id); }
-    else { node.style.display = 'none'; win.minimized = true; }
+    const act = btn.dataset.action;
+    if (act === 'close') { node.remove(); sys_state.m_windows.delete(win.id); }
+    else if (act === 'minimize') { node.style.display = 'none'; win.minimized = true; }
+    else if (act === 'maximize') {
+      win.maximized = !win.maximized;
+      node.style.transform = win.maximized ? 'translate3d(0px, 0px, 0px)' : `translate3d(${win.x}px, ${win.y}px, 0px)`;
+      node.style.width = win.maximized ? '100vw' : `${win.w}px`;
+      node.style.height = win.maximized ? 'calc(100vh - 48px)' : `${win.h}px`;
+      node.style.borderRadius = win.maximized ? '0px' : '14px';
+    }
     renderTaskbar();
   }));
 
   const header = node.querySelector('.window-header');
   header?.addEventListener('pointerdown', (e) => {
-    if (e.target.matches('button')) return;
+    if (e.target.matches('button') || win.maximized) return;
     let ox = e.clientX - win.x, oy = e.clientY - win.y;
     const drag = (ev) => { win.x = ev.clientX - ox; win.y = ev.clientY - oy; node.style.transform = `translate3d(${win.x}px, ${win.y}px, 0px)`; };
     const stop = () => { document.removeEventListener('pointermove', drag); document.removeEventListener('pointerup', stop); };
