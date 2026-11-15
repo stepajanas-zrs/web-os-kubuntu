@@ -1,1 +1,293 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Had</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            color: white;
+            flex-direction: column;
+        }
+        canvas {
+            border: 3px solid #4ecca3;
+            border-radius: 8px;
+            background: #16213e;
+            display: block;
+        }
+        .info {
+            display: flex;
+            justify-content: space-between;
+            width: 600px;
+            margin: 10px 0;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .score { color: #4ecca3; }
+        .best { color: #feca57; }
+        .controls {
+            margin-top: 15px;
+            color: #aaa;
+            font-size: 14px;
+        }
+        .overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+        .overlay.hidden { display: none; }
+        .overlay-box {
+            background: #16213e;
+            border: 2px solid #4ecca3;
+            border-radius: 15px;
+            padding: 40px 60px;
+            text-align: center;
+        }
+        .overlay-box h1 {
+            font-size: 42px;
+            color: #4ecca3;
+            margin-bottom: 15px;
+        }
+        .overlay-box p {
+            font-size: 20px;
+            margin: 8px 0;
+        }
+        .overlay-box button {
+            margin-top: 20px;
+            padding: 12px 40px;
+            font-size: 20px;
+            background: #4ecca3;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+        .overlay-box button:hover {
+            background: #3db892;
+        }
+        .game-over-title { color: #ff4757 !important; }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <span class="score" id="score">Skóre: 0</span>
+        <span class="best" id="best">Rekord: 0</span>
+    </div>
+    <canvas id="canvas" width="600" height="400"></canvas>
+    <div class="controls">Ovládání: Šipky nebo WASD | C = Restart</div>
 
+    <!-- Start screen -->
+    <div class="overlay" id="startOverlay">
+        <div class="overlay-box">
+            <h1>🐍 Had</h1>
+            <p>Jez food, rosteš, vyhýbej se zdi a sobě!</p>
+            <button onclick="startGame()">Hrát</button>
+        </div>
+    </div>
+
+    <!-- Game over screen -->
+    <div class="overlay hidden" id="gameOverOverlay">
+        <div class="overlay-box">
+            <h1 class="game-over-title">KONEC HRY!</h1>
+            <p id="finalScore">Skóre: 0</p>
+            <p id="finalBest">Rekord: 0</p>
+            <button onclick="startGame()">Hrát znovu (C)</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const BLOCK = 20;
+        const COLS = canvas.width / BLOCK;  // 30
+        const ROWS = canvas.height / BLOCK; // 20
+        const TICK = 120; // ms
+
+        let snake, food, direction, nextDirection, score, bestScore, loop;
+
+        bestScore = parseInt(localStorage.getItem('snakeBest')) || 0;
+        document.getElementById('best').textContent = `Rekord: ${bestScore}`;
+
+        function startGame() {
+            document.getElementById('startOverlay').classList.add('hidden');
+            document.getElementById('gameOverOverlay').classList.add('hidden');
+
+            snake = {
+                body: [[15, 10], [14, 10], [13, 10]],
+                dir: [1, 0],
+                nextDir: [1, 0]
+            };
+            direction = [1, 0];
+            nextDirection = [1, 0];
+            score = 0;
+            updateScore();
+            placeFood();
+
+            if (loop) clearInterval(loop);
+            loop = setInterval(tick, TICK);
+            draw();
+        }
+
+        function placeFood() {
+            let fx, fy, occupied;
+            do {
+                fx = Math.floor(Math.random() * COLS);
+                fy = Math.floor(Math.random() * ROWS);
+                occupied = snake.body.some(s => s[0] === fx && s[1] === fy);
+            } while (occupied);
+            food = [fx, fy];
+        }
+
+        function tick() {
+            direction = [...nextDirection];
+
+            const head = [
+                snake.body[0][0] + direction[0],
+                snake.body[0][1] + direction[1]
+            ];
+
+            // Kolize se zdí
+            if (head[0] < 0 || head[0] >= COLS || head[1] < 0 || head[1] >= ROWS) {
+                gameOver();
+                return;
+            }
+
+            // Kolize s sebou
+            if (snake.body.some(s => s[0] === head[0] && s[1] === head[1])) {
+                gameOver();
+                return;
+            }
+
+            snake.body.unshift(head);
+
+            // Jídlo
+            if (head[0] === food[0] && head[1] === food[1]) {
+                score++;
+                updateScore();
+                placeFood();
+            } else {
+                snake.body.pop();
+            }
+
+            draw();
+        }
+
+        function gameOver() {
+            clearInterval(loop);
+            loop = null;
+
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('snakeBest', bestScore);
+                document.getElementById('best').textContent = `Rekord: ${bestScore}`;
+            }
+
+            document.getElementById('finalScore').textContent = `Skóre: ${score}`;
+            document.getElementById('finalBest').textContent = `Rekord: ${bestScore}`;
+            document.getElementById('gameOverOverlay').classList.remove('hidden');
+        }
+
+        function updateScore() {
+            document.getElementById('score').textContent = `Skóre: ${score}`;
+        }
+
+        function draw() {
+            // Pozadí
+            ctx.fillStyle = '#16213e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Mřížka
+            ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+            for (let x = 0; x <= canvas.width; x += BLOCK) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+            }
+            for (let y = 0; y <= canvas.height; y += BLOCK) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            }
+
+            // Jídlo
+            ctx.fillStyle = '#ff4757';
+            ctx.shadowColor = '#ff4757';
+            ctx.shadowBlur = 15;
+            ctx.beginPath();
+            ctx.arc(food[0] * BLOCK + BLOCK/2, food[1] * BLOCK + BLOCK/2, BLOCK/2 - 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Had
+            snake.body.forEach((seg, i) => {
+                const color = i === 0 ? '#ffffff' : '#4ecca3';
+                ctx.fillStyle = color;
+                ctx.shadowColor = color;
+                ctx.shadowBlur = i === 0 ? 8 : 3;
+                roundRect(ctx, seg[0] * BLOCK + 1, seg[1] * BLOCK + 1, BLOCK - 2, BLOCK - 2, 5);
+                ctx.shadowBlur = 0;
+            });
+        }
+
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Klávesnice
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+
+            // Restart
+            if (key === 'c') {
+                if (loop === null || !document.getElementById('gameOverOverlay').classList.contains('hidden')) {
+                    startGame();
+                    return;
+                }
+            }
+
+            // Ukončení
+            if (key === 'q') {
+                if (loop) {
+                    clearInterval(loop);
+                    loop = null;
+                }
+                document.getElementById('startOverlay').classList.remove('hidden');
+                return;
+            }
+
+            if (!loop) return;
+
+            // Ovládání - šipky
+            if (e.key === 'ArrowLeft' && direction[0] !== 1) nextDirection = [-1, 0];
+            else if (e.key === 'ArrowRight' && direction[0] !== -1) nextDirection = [1, 0];
+            else if (e.key === 'ArrowUp' && direction[1] !== 1) nextDirection = [0, -1];
+            else if (e.key === 'ArrowDown' && direction[1] !== -1) nextDirection = [0, 1];
+
+            // Ovládání - WASD
+            else if (key === 'a' && direction[0] !== 1) nextDirection = [-1, 0];
+            else if (key === 'd' && direction[0] !== -1) nextDirection = [1, 0];
+            else if (key === 'w' && direction[1] !== 1) nextDirection = [0, -1];
+            else if (key === 's' && direction[1] !== -1) nextDirection = [0, 1];
+        });
+    </script>
+</body>
+</html>
