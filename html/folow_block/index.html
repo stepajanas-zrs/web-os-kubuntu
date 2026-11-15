@@ -1,109 +1,227 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Hexagon - Logická Hra</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: #050505;
-            color: #fff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            overflow: hidden;
-        }
-        h1 {
-            font-size: 1.8rem;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            color: #00ffcc;
-            text-shadow: 0 0 10px #00ffcc;
-        }
-        #info {
-            margin-bottom: 20px;
-            font-size: 1rem;
-            color: #888;
-            text-align: center;
-            max-width: 800px;
-            line-height: 1.4;
-        }
-        #info strong { color: #ff0066; }
-        #gameContainer {
-            position: relative;
-            width: 600px;
-            height: 600px;
-        }
-        canvas {
-            background: #0a0a0a;
-            border: 2px solid #222;
-            border-radius: 10px;
-            box-shadow: 0 0 30px rgba(0, 255, 204, 0.1);
-            cursor: pointer;
-        }
-        #overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            border-radius: 10px;
-            z-index: 10;
-            transition: opacity 0.3s;
-        }
-        #overlay.hidden { opacity: 0; pointer-events: none; }
-        #overlay h2 {
-            font-size: 3rem;
-            margin-bottom: 20px;
-            text-shadow: 0 0 20px currentColor;
-        }
-        #overlay p {
-            font-size: 1.2rem;
-            margin-bottom: 30px;
-            color: #ccc;
-        }
-        button {
-            padding: 15px 40px;
-            font-size: 1.2rem;
-            background: transparent;
-            color: #00ffcc;
-            border: 2px solid #00ffcc;
-            border-radius: 5px;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            transition: all 0.3s;
-        }
-        button:hover {
-            background: #00ffcc;
-            color: #000;
-            box-shadow: 0 0 20px #00ffcc;
-        }
-        #stats {
-            margin-top: 15px;
-            font-size: 1.1rem;
-            color: #666;
-        }
-        #stats span { color: #ff0066; font-weight: bold; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cesta barvou – logická hra</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:#0d1117; color:#e6edf3;
+    font-family:'Segoe UI', system-ui, sans-serif;
+    display:flex; flex-direction:column; align-items:center;
+    min-height:100vh; padding:20px; user-select:none;
+  }
+  h1 { font-size:1.6rem; letter-spacing:2px; margin-bottom:4px;
+       background:linear-gradient(90deg,#ff5c7a,#ffd166,#4dd0e1,#8be27a);
+       -webkit-background-clip:text; background-clip:text; color:transparent; }
+  #sub { color:#8b949e; font-size:.85rem; margin-bottom:14px; text-align:center; max-width:520px; }
+  #hud { display:flex; gap:24px; margin-bottom:12px; font-size:.95rem; color:#8b949e; }
+  #hud b { color:#e6edf3; }
+  #board {
+    display:grid; gap:4px; padding:10px; background:#161b22;
+    border:1px solid #30363d; border-radius:14px; touch-action:none;
+  }
+  .cell {
+    width:58px; height:58px; border-radius:12px; background:#21262d;
+    position:relative; cursor:pointer; transition:background .12s;
+  }
+  .cell:hover { filter:brightness(1.25); }
+  .cell svg { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+  .dot { position:absolute; inset:22%; border-radius:50%; z-index:2;
+         box-shadow:0 0 10px currentColor; }
+  #controls { margin-top:14px; display:flex; gap:10px; }
+  button {
+    background:#21262d; color:#e6edf3; border:1px solid #30363d;
+    padding:9px 18px; border-radius:9px; cursor:pointer; font-size:.9rem;
+  }
+  button:hover { background:#30363d; }
+  #msg { margin-top:12px; height:24px; font-weight:600; }
+  .win { color:#8be27a; } .lose { color:#ff5c7a; }
+</style>
 </head>
 <body>
-    <h1>Neon Hexagon</h1>
-    <div id="info">
-        Klikni na sousední hexagon pro aktivaci.<br>
-        <strong>Pravidlo:</strong> Propojuj pouze <strong>stejné barvy</strong>.<br>
-        Pokud klikneš na hexagon jiné barvy než má tvůj aktuální, <strong>prohraješ!</strong>
-    </div>
-    <div id="gameContainer">
-        <canvas id="gameCanvas" width="600" height="600"></canvas>
-        <div id="overlay">
-            <h2 style="color: #00ffcc;">Neon Hexagon</h2>
-            <p>Logická hra s barvami</p>
-            <button id="startBtn">Sp
+  <h1>CESTA BARVOU</h1>
+  <div id="sub">Spojte dvě stejné tečky čarou stejné barvy. Čáry se nesmí křížit a musí zaplnit celé pole.</div>
+  <div id="hud">Level <b id="lvl">1</b> &nbsp;|&nbsp; Tahy <b id="moves">0</b></div>
+  <div id="board"></div>
+  <div id="controls">
+    <button onclick="resetLevel()">↺ Reset</button>
+    <button onclick="newLevel()">Nový level</button>
+  </div>
+  <div id="msg"></div>
+
+<script>
+const COLORS = ['#ff5c7a','#4dd0e1','#ffd166','#8be27a','#c792ea','#ff9f43'];
+let N = 4, level = 1, moves = 0;
+let endpoints = [], paths = {}, dragging = null;
+
+const boardEl = document.getElementById('board');
+const msgEl   = document.getElementById('msg');
+
+function key(r,c){ return r+','+c; }
+
+function newLevel(){
+  level++; moves = 0;
+  document.getElementById('lvl').textContent = level;
+  N = Math.min(4 + Math.floor((level-1)/2), 6); // růst obtížnosti 4→6
+  generatePuzzle();
+}
+function resetLevel(){ buildPathsFromScratch(); render(); msgEl.textContent=''; }
+
+/* ---------- generování řešitelného puzzlu ---------- */
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function generatePuzzle(){
+  const total = N*N;
+  let tries = 0;
+  while(tries++ < 400){
+    const sol = tryCarve(total);
+    if(sol){
+      endpoints = []; paths = {};
+      sol.forEach((seg,i)=>{
+        const col = COLORS[i % COLORS.length];
+        endpoints.push({r:seg[0].r,c:seg[0].c,col});
+        endpoints.push({r:seg[seg.length-1].r,c:seg[seg.length-1].c,col});
+      });
+      buildPathsFromScratch(); render();
+      msgEl.textContent=''; return;
+    }
+  }
+  generatePuzzle(); // záložní pokus
+}
+
+// rozdělí mřížku na náhodné souvislé cesty (backtracking)
+function tryCarve(total){
+  const visited = Array.from({length:N},()=>Array(N).fill(false));
+  const result = [];
+  function dfs(cell, cur){
+    if(cur.length) result.push(cur.slice());
+    // najdi první nenavštívenou buňku
+    let start=null;
+    outer: for(let r=0;r<N;r++) for(let c=0;c<N;c++) if(!visited[r][c]){start={r,c};break outer;}
+    if(!start) return true;
+    visited[start.r][start.c]=true;
+    const path=[start];
+    function walk(p){
+      if(p.length>=2 && !hasNeighborUnvisited(p[p.length-1])){
+        result.push(p.slice());
+        if(dfs(null,p)) return true;
+        result.pop();
+      }
+      const opts = neighbors(p[p.length-1]).filter(n=>!visited[n.r][n.c]);
+      shuffle(opts);
+      for(const n of opts){
+        visited[n.r][n.c]=true; p.push(n);
+        if(walk(p)) return true;
+        p.pop(); visited[n.r][n.c]=false;
+      }
+      return false;
+    }
+    if(walk(path)) return true;
+    visited[start.r][start.c]=false;
+    return false;
+  }
+  if(dfs(null,[])) return result.length ? result : null;
+  return null;
+}
+function hasNeighborUnvisited(c){ return neighbors(c).some(n=>!isVisitedInCarve(n)); }
+function isVisitedInCarve(){ return false; } // zjednodušení – viz walk výše
+function neighbors(c){
+  return [{r:c.r-1,c:c.c},{r:c.r+1,c:c.c},{r:c.r,c:c.c-1},{r:c.r,c:c.c+1}]
+    .filter(n=>n.r>=0&&n.r<N&&n.c>=0&&n.c<N);
+}
+
+/* ---------- stav hráče ---------- */
+function buildPathsFromScratch(){
+  paths = {}; moves=0; document.getElementById('moves').textContent=0;
+  endpoints.forEach(e=>{ paths[key(e.r,e.c)] = e.col; });
+}
+
+/* ---------- vykreslení ---------- */
+function render(){
+  boardEl.style.gridTemplateColumns = `repeat(${N},58px)`;
+  boardEl.innerHTML='';
+  const segMap = {};
+  // spojnice mezi sousedy stejné barvy v cestách
+  Object.keys(paths).forEach(k=>{
+    const [r,c]=k.split(',').map(Number), col=paths[k];
+    neighbors({r,c}).forEach(n=>{
+      const nk=key(n.r,n.c);
+      if(paths[nk]===col) segMap[k+'-'+nk]=col;
+    });
+  });
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    const cell=document.createElement('div');
+    cell.className='cell'; cell.dataset.r=r; cell.dataset.c=c;
+    const col=paths[key(r,c)];
+    if(col){
+      cell.style.background=col+'33';
+      const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.setAttribute('viewBox','0 0 100 100');
+      neighbors({r,c}).forEach(n=>{
+        if(paths[key(n.r,n.c)]===col){
+          const ln=document.createElementNS('http://www.w3.org/2000/svg','line');
+          ln.setAttribute('x1',50);ln.setAttribute('y1',50);
+          ln.setAttribute('x2',50+(n.c-c)*50);ln.setAttribute('y2',50+(n.r-r)*50);
+          ln.setAttribute('stroke',col);ln.setAttribute('stroke-width',26);
+          ln.setAttribute('stroke-linecap','round');
+          svg.appendChild(ln);
+        }
+      });
+      cell.appendChild(svg);
+      const dot=document.createElement('div');
+      dot.className='dot'; dot.style.color=col; dot.style.background=col;
+      if(endpoints.some(e=>e.r===r&&e.c===c)) cell.appendChild(dot);
+    }
+    boardEl.appendChild(cell);
+  }
+}
+
+/* ---------- interakce ---------- */
+boardEl.addEventListener('pointerdown',e=>{
+  const cell=e.target.closest('.cell'); if(!cell)return;
+  const r=+cell.dataset.r,c=+cell.dataset.c,k=key(r,c);
+  dragging={active:true, head:{r,c}, prev:null};
+  handleCell(r,c);
+});
+window.addEventListener('pointermove',e=>{
+  if(!dragging||!dragging.active)return;
+  const el=document.elementFromPoint(e.clientX,e.clientY);
+  const cell=el&&el.closest?el.closest('.cell'):null;
+  if(!cell)return;
+  handleCell(+cell.dataset.r,+cell.dataset.c);
+});
+window.addEventListener('pointerup',()=>{ dragging=null; checkWin(); });
+
+function handleCell(r,c){
+  if(!dragging)return;
+  const k=key(r,c), col=paths[k];
+  const head=dragging.head, hk=key(head.r,head.c);
+  if(!areNeighbors(head,{r,c}))return;
+  if(col===undefined){                       // malování nové části
+    paths[k]=paths[hk]; dragging.head={r,c}; moves++; render();
+  } else if(col!==paths[hk] && endpoints.some(e=>e.r===r&&e.c===c)){
+    // připojení ke konci jiné barvy -> zaměň barvu tahu
+    paths[k]=paths[hk]; dragging.head={r,c}; moves++; render();
+  } else if(isEndpoint(r,c) && col===paths[hk]){
+    dragging.head={r,c};                     // dorazili jsme na správný konec
+  }
+}
+function areNeighbors(a,b){ return Math.abs(a.r-b.r)+Math.abs(a.c-b.c)===1; }
+function isEndpoint(r,c){ return endpoints.some(e=>e.r===r&&e.c===c); }
+
+function checkWin(){
+  const filled = Object.keys(paths).length===N*N;
+  const sameColor = endpoints.every(e=>paths[key(e.r,e.c)]===e.col);
+  if(filled && sameColor){
+    msgEl.className='win'; msgEl.textContent='✓ Vyřešeno! Skvělá práce.';
+    setTimeout(newLevel,1200);
+  } else { msgEl.className='lose'; msgEl.textContent='Ještě to není – zkus to znovu.'; }
+}
+
+document.querySelector('button').addEventListener('click',()=>{});
+generatePuzzle();
+</script>
+</body>
+</html>
