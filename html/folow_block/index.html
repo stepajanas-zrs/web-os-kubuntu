@@ -3,32 +3,405 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎨 Barevný Tok</title>
+    <title>Neon Hexagon - Logická Hra</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
-            background: #0d1117;
+            background: #050505;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: #00ffcc;
+            text-shadow: 0 0 10px #00ffcc;
+        }
+        #info {
+            margin-bottom: 20px;
+            font-size: 1rem;
+            color: #888;
+            text-align: center;
+            max-width: 800px;
+            line-height: 1.4;
+        }
+        #info strong { color: #ff0066; }
+        #gameContainer {
+            position: relative;
+            width: 600px;
+            height: 600px;
+        }
+        canvas {
+            background: #0a0a0a;
+            border: 2px solid #222;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 255, 204, 0.1);
+            cursor: pointer;
+        }
+        #overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            font-family, Tahoma, Geneva, Verdana, sans-serif;
-            color: #eee;
-            flex-direction: column;
-            gap: 20px;
+            border-radius: 10px;
+            z-index: 10;
+            transition: opacity 0.3s;
         }
-
-        h1 {
-            font-size: 2.2rem;
-            background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #1dd1a1);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
+        #overlay.hidden { opacity: 0; pointer-events: none; }
+        #overlay h2 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px currentColor;
         }
-
-        #hud {
-            display: flex;
-            gap: 30px;
+        #overlay p {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            color: #ccc;
+        }
+        button {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background: transparent;
+            color: #00ffcc;
+            border: 2px solid #00ffcc;
+            border-radius: 5px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #00ffcc;
+            color: #000;
+            box-shadow: 0 0 20px #00ffcc;
+        }
+        #stats {
+            margin-top: 15px;
             font-size: 1.1rem;
-            color: #8b949e
+            color: #666;
+        }
+        #stats span { color: #ff0066; font-weight: bold; }
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .controls button {
+            padding: 8px 20px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>Neon Hexagon</h1>
+    <div id="info">
+        Klikni na sousední hexagon pro aktivaci.<br>
+        <strong>Pravidlo:</strong> Propojuj pouze <strong>stejné barvy</strong>.<br>
+        Pokud aktivuješ hexagon sousedící s jinou barvou, <strong>spálí se</strong> (z šedá) a nelze ho použít.
+    </div>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="600" height="600"></canvas>
+        <div id="overlay">
+            <h2 style="color: #00ffcc;">Neon Hexagon</h2>
+            <p>Logická hra s gravitací barev</p>
+            <button id="startBtn">Spustit Hru</button>
+        </div>
+    </div>
+    <div id="stats">
+        Level: <span id="levelNum">1</span> | 
+        Pohyby: <span id="movesNum">0</span> | 
+        Spálené: <span id="burnedNum">0</span>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const overlay = document.getElementById('overlay');
+        const startBtn = document.getElementById('startBtn');
+        const levelNumEl = document.getElementById('levelNum');
+        const movesNumEl = document.getElementById('movesNum');
+        const burnedNumEl = document.getElementById('burnedNum');
+
+        // Barvy
+        const COLORS = [
+            { name: 'red', hex: '#ff0066', glow: '#ff0066' },
+            { name: 'blue', hex: '#00ccff', glow: '#00ccff' },
+            { name: 'green', hex: '#00ff66', glow: '#00ff66' },
+            { name: 'yellow', hex: '#ffcc00', glow: '#ffcc00' },
+            { name: 'purple', hex: '#cc00ff', glow: '#cc00ff' },
+            { name: 'cyan', hex: '#00ffcc', glow: '#00ffcc' }
+        ];
+
+        const GRAYED = { name: 'burned', hex: '#333333', glow: '#111111' };
+        const CENTER = { name: 'center', hex: '#ffffff', glow: '#ffffff' };
+
+        // Hexagon grid
+        const HEX_SIZE = 28;
+        const SQRT3 = Math.sqrt(3);
+
+        let hexGrid = [];
+        let currentLevel = 1;
+        let moves = 0;
+        let burned = 0;
+        let gameActive = false;
+        let animationId;
+
+        // Axial coordinates for hex grid
+        function hexToPixel(q, r) {
+            const x = HEX_SIZE * (SQRT3 * q + SQRT3 / 2 * r);
+            const y = HEX_SIZE * (3 / 2 * r);
+            return { x: x + canvas.width / 2, y: y + canvas.height / 2 };
+        }
+
+        function pixelToHex(x, y) {
+            const q = (SQRT3 / 3 * (x - canvas.width / 2) - 1 / 3 * (y - canvas.height / 2)) / HEX_SIZE;
+            const r = (2 / 3 * (y - canvas.height / 2)) / HEX_SIZE;
+            return hexRound(q, r);
+        }
+
+        function hexRound(q, r) {
+            const s = -q - r;
+            let rq = Math.round(q);
+            let rr = Math.round(r);
+            let rs = Math.round(s);
+            const qDiff = Math.abs(rq - q);
+            const rDiff = Math.abs(rr - r);
+            const sDiff = Math.abs(rs - s);
+            if (qDiff > rDiff && qDiff > sDiff) {
+                rq = -rr - rs;
+            } else if (rDiff > sDiff) {
+                rr = -rq - rs;
+            }
+            return { q: rq, r: rr };
+        }
+
+        function getHexNeighbors(q, r) {
+            const directions = [
+                [1, 0], [-1, 0], [0, 1], [0, -1], [1, -1], [-1, 1]
+            ];
+            return directions.map(([dq, dr]) => ({ q: q + dq, r: r + dr }));
+        }
+
+        function isHexInBounds(q, r, maxDist) {
+            return Math.abs(q) <= maxDist && Math.abs(r) <= maxDist && Math.abs(q + r) <= maxDist;
+        }
+
+        function generateLevel(level) {
+            hexGrid = [];
+            const maxDist = Math.min(2 + Math.floor(level / 2), 5); // Zvyšuje složitost
+            const numColors = Math.min(3 + Math.floor(level / 3), COLORS.length);
+            
+            // Generujeme hexagony do šestiúhelníku
+            for (let q = -maxDist; q <= maxDist; q++) {
+                for (let r = -maxDist; r <= maxDist; r++) {
+                    if (isHexInBounds(q, r, maxDist)) {
+                        const pos = hexToPixel(q, r);
+                        let color;
+                        
+                        if (q === 0 && r === 0) {
+                            color = { ...CENTER };
+                        } else {
+                            // Náhodná barva z dostupných
+                            const randomColor = COLORS[Math.floor(Math.random() * numColors)];
+                            color = { ...randomColor };
+                        }
+                        
+                        hexGrid.push({
+                            q, r,
+                            x: pos.x,
+                            y: pos.y,
+                            color: color,
+                            originalColor: { ...color },
+                            active: q === 0 && r === 0,
+                            burned: false,
+                            pulse: 0
+                        });
+                    }
+                }
+            }
+        }
+
+        function drawHex(x, y, size, color, isActive, isBurned, pulse) {
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = Math.PI / 3 * i;
+                const hx = x + size * Math.cos(angle);
+                const hy = y + size * Math.sin(angle);
+                if (i === 0) ctx.moveTo(hx, hy);
+                else ctx.lineTo(hx, hy);
+            }
+            ctx.closePath();
+
+            // Glow efekt
+            if (isActive && !isBurned) {
+                ctx.shadowBlur = 15 + pulse * 5;
+                ctx.shadowColor = color.glow;
+            } else {
+                ctx.shadowBlur = 0;
+            }
+
+            // Vyplnění
+            if (isBurned) {
+                ctx.fillStyle = '#333';
+            } else if (isActive) {
+                ctx.fillStyle = color.hex;
+            } else {
+                ctx.fillStyle = '#111';
+            }
+            ctx.fill();
+
+            // Okraj
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = isBurned ? '#444' : isActive ? color.hex : '#333';
+            ctx.lineWidth = isActive ? 2 : 1;
+            ctx.stroke();
+
+            // Symbol (tečka pro aktivaci)
+            if (isActive && !isBurned) {
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#fff';
+                ctx.fill();
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Vykreslení hexagonů
+            hexGrid.forEach(hex => {
+                const pulse = hex.active ? Math.sin(Date.now() / 300) * 0.5 + 0.5 : 0;
+                drawHex(hex.x, hex.y, HEX_SIZE - 2, hex.color, hex.active, hex.burned, pulse);
+            });
+
+            // Zvýraznění sousedů aktivního hexagonu
+            const activeHex = hexGrid.find(h => h.active && !h.burned);
+            if (activeHex) {
+                const neighbors = getHexNeighbors(activeHex.q, activeHex.r);
+                hexGrid.forEach(hex => {
+                    if (neighbors.some(n => n.q === hex.q && n.r === hex.r) && !hex.active && !hex.burned) {
+                        ctx.beginPath();
+                        ctx.arc(hex.x, hex.y, HEX_SIZE + 3, 0, Math.PI * 2);
+                        ctx.strokeStyle = '#555';
+                        ctx.lineWidth = 1;
+                        ctx.setLineDash([3, 3]);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+                });
+            }
+
+            animationId = requestAnimationFrame(render);
+        }
+
+        function handleClick(e) {
+            if (!gameActive) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const clickedHex = pixelToHex(x, y);
+            const hex = hexGrid.find(h => h.q === clickedHex.q && h.r === clickedHex.r);
+
+            if (!hex || hex.active || hex.burned) return;
+
+            // Kontrola, zda je sousedem aktivního hexagonu
+            const activeHex = hexGrid.find(h => h.active && !h.burned);
+            if (!activeHex) return;
+
+            const neighbors = getHexNeighbors(activeHex.q, activeHex.r);
+            if (!neighbors.some(n => n.q === hex.q && n.r === hex.r)) return;
+
+            // Logika hry
+            moves++;
+            movesNumEl.textContent = moves;
+
+            if (hex.color.name === activeHex.color.name) {
+                // Stejná barva - aktivace
+                hex.active = true;
+                checkWin();
+            } else {
+                // Různá barva - spálení
+                hex.burned = true;
+                activeHex.burned = true; // Aktivní se také spálí
+                burned += 2;
+                burnedNumEl.textContent = burned;
+                checkLoss();
+            }
+        }
+
+        function checkWin() {
+            const allActive = hexGrid.every(h => h.active || h.burned);
+            const allNonBurned = hexGrid.filter(h => !h.burned).every(h => h.active);
+            
+            if (allNonBurned) {
+                gameActive = false;
+                cancelAnimationFrame(animationId);
+                overlay.classList.remove('hidden');
+                overlay.querySelector('h2').textContent = 'Level ' + currentLevel + ' Splněn!';
+                overlay.querySelector('h2').style.color = '#00ff66';
+                overlay.querySelector('p').textContent = `Pohyby: ${moves} | Spálené: ${burned}`;
+                startBtn.textContent = 'Další Level';
+            }
+        }
+
+        function checkLoss() {
+            // Zkontroluj, zda nejsou všechny možnosti spálené
+            const activeHex = hexGrid.find(h => h.active && !h.burned);
+            if (!activeHex) {
+                gameActive = false;
+                cancelAnimationFrame(animationId);
+                overlay.classList.remove('hidden');
+                overlay.querySelector('h2').textContent = 'Konec Hry';
+                overlay.querySelector('h2').style.color = '#ff0066';
+                overlay.querySelector('p').textContent = `Dosažený Level: ${currentLevel}`;
+                startBtn.textContent = 'Zkusit Znovu';
+            }
+        }
+
+        function startGame() {
+            if (startBtn.textContent === 'Zkusit Znovu') {
+                currentLevel = 1;
+                moves = 0;
+                burned = 0;
+                levelNumEl.textContent = currentLevel;
+                movesNumEl.textContent = moves;
+                burnedNumEl.textContent = burned;
+            } else {
+                currentLevel++;
+                levelNumEl.textContent = currentLevel;
+                moves = 0;
+                burned = 0;
+                movesNumEl.textContent = moves;
+                burnedNumEl.textContent = burned;
+            }
+
+            generateLevel(currentLevel);
+            gameActive = true;
+            overlay.classList.add('hidden');
+            render();
+        }
+
+        // Event Listeners
+        canvas.addEventListener('click', handleClick);
+        startBtn.addEventListener('click', startGame);
+
+        // Inicializace
+        generateLevel(1);
+        render();
+        overlay.classList.remove('hidden');
+    </script>
+</body>
+</html>
