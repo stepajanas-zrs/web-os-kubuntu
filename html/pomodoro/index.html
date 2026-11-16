@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro & Úkoly</title>
+    <style>
+        :root {
+            --bg: #121212;
+            --card: #1e1e1e;
+            --primary: #e63946;
+            --break: #2a9d8f;
+            --text: #f1faee;
+            --muted: #a8dadc;
+            --accent: var(--primary);
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: var(--card);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+
+        .modes {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            background: transparent;
+            border: 1px solid #444;
+            color: var(--text);
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+
+        .mode-btn.active {
+            background-color: var(--accent);
+            border-color: var(--accent);
+            font-weight: bold;
+        }
+
+        .timer {
+            font-size: 72px;
+            font-weight: bold;
+            margin: 10px 0 25px 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            background-color: #333;
+        }
+
+        .tasks-section {
+            border-top: 1px solid #333;
+            padding-top: 20px;
+            text-align: left;
+        }
+
+        .tasks-section h3 {
+            margin: 0 0 15px 0;
+            font-size: 18px;
+            color: var(--muted);
+        }
+
+        .task-input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background-color: #121212;
+            color: white;
+            font-size: 14px;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent);
+        }
+
+        .add-btn {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 0 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        li {
+            background-color: #262626;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        li:hover {
+            background-color: #2e2e2e;
+        }
+
+        li.done span {
+            text-decoration: line-through;
+            color: #777;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #e63946;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 2px 6px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="modes">
+        <button class="mode-btn active" onclick="setMode(25, 'work', this)">Práce (25m)</button>
+        <button class="mode-btn" onclick="setMode(5, 'break', this)">Pauza (5m)</button>
+        <button class="mode-btn" onclick="setMode(15, 'break', this)">Dlouhá pauza (15m)</button>
+    </div>
+
+    <div class="timer" id="display">25:00</div>
+
+    <div class="controls">
+        <button class="btn" id="startBtn" onclick="toggleTimer()">Start</button>
+        <button class="btn btn-secondary" onclick="resetTimer()">Reset</button>
+    </div>
+
+    <div class="tasks-section">
+        <h3>Úkoly na dnešek</h3>
+        <div class="task-input-group">
+            <input type="text" id="taskInput" placeholder="Přidat nový úkol..." onkeypress="handleEnter(event)">
+            <button class="add-btn" onclick="addTask()">+</button>
+        </div>
+        <ul id="taskList"></ul>
+    </div>
+</div>
+
+<script>
+    let timeLeft = 25 * 60;
+    let currentDuration = 25 * 60;
+    let timerId = null;
+    let isRunning = false;
+
+    const display = document.getElementById('display');
+    const startBtn = document.getElementById('startBtn');
+    const taskInput = document.getElementById('taskInput');
+    const taskList = document.getElementById('taskList');
+
+    // Zvukové upozornění pomocí Web Audio API (bez nutnosti externích souborů)
+    function playBeep() {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(660, ctx.currentTime);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.5);
+    }
+
+    function updateDisplay() {
+        const mins = Math.floor(timeLeft / 60);
+        const secs = timeLeft % 60;
+        const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        display.textContent = formatted;
+        document.title = `${formatted} - Pomodoro`;
+    }
+
+    function setMode(minutes, type, btn) {
+        clearInterval(timerId);
+        isRunning = false;
+        startBtn.textContent = 'Start';
+        currentDuration = minutes * 60;
+        timeLeft = currentDuration;
+
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const color = type === 'work' ? '#e63946' : '#2a9d8f';
+        document.documentElement.style.setProperty('--accent', color);
+
+        updateDisplay();
+    }
+
+    function toggleTimer() {
+        if (isRunning) {
+            clearInterval(timerId);
+            isRunning = false;
+            startBtn.textContent = 'Pokračovat';
+        } else {
+            isRunning = true;
+            startBtn.textContent = 'Pauza';
+            timerId = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    updateDisplay();
+                } else {
+                    clearInterval(timerId);
+                    isRunning = false;
+                    startBtn.textContent = 'Start';
+                    playBeep();
+                }
+            }, 1000);
+        }
+    }
+
+    function resetTimer() {
+        clearInterval(timerId);
+        isRunning = false;
+        startBtn.textContent = 'Start';
+        timeLeft = currentDuration;
+        updateDisplay();
+    }
+
+    // Správa úkolů s ukládáním do prohlížeče
+    let tasks = JSON.parse(localStorage.getItem('pomodoroTasks')) || [];
+
+    function saveTasks() {
+        localStorage.setItem('pomodoroTasks', JSON.stringify(tasks));
+    }
+
+    function renderTasks() {
+        taskList.innerHTML = '';
+        tasks.forEach((task, index) => {
+            const li = document.createElement('li');
+            if (task.done) li.classList.add('done');
+
+            const span = document.createElement('span');
+            span.textContent = task.text;
+            span.onclick = () => toggleTask(index);
+
+            const delBtn = document.createElement('button');
+            delBtn.textContent = '✕';
+            delBtn.className = 'delete-btn';
+            delBtn.onclick = (e) => {
+                e.stopPropagation();
+                deleteTask(index);
+            };
+
+            li.appendChild(span);
+            li.appendChild(delBtn);
+            taskList.appendChild(li);
+        });
+    }
+
+    function addTask() {
+        const text = taskInput.value.trim();
+        if (!text) return;
+        tasks.push({ text: text, done: false });
+        taskInput.value = '';
+        saveTasks();
+        renderTasks();
+    }
+
+    function toggleTask(index) {
+        tasks[index].done = !tasks[index].done;
+        saveTasks();
+        renderTasks();
+    }
+
+    function deleteTask(index) {
+        tasks.splice(index, 1);
+        saveTasks();
+        renderTasks();
+    }
+
+    function handleEnter(e) {
+        if (e.key === 'Enter') addTask();
+    }
+
+    // Inicializace při načtení
+    renderTasks();
+</script>
+
+</body>
+</html>
