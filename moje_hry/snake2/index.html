@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hra Had od Lea</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: sans-serif;
+            color: #ffffff;
+        }
+        canvas {
+            background-color: #000000;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // Barvy (přesně podle Python kódu)
+        const WHITE = "rgb(255, 255, 255)";
+        const YELLOW = "rgb(255, 255, 102)";
+        const BLACK = "rgb(0, 0, 0)";
+        const RED = "rgb(213, 50, 80)";
+        const GREEN = "rgb(0, 255, 0)";
+        const BLUE = "rgb(50, 153, 213)";
+
+        // Nastavení okna
+        const DIS_WIDTH = 600;
+        const DIS_HEIGHT = 400;
+        const SNAKE_BLOCK = 10;
+        const FPS = 10;
+
+        let gameOver = false;
+        let gameClose = false;
+
+        let x1, y1, x1Change, y1Change;
+        let snakeList, lengthOfSnake;
+        let foodX, foodY;
+        let gameInterval;
+
+        // Generování pozice jídla (násobky 10)
+        function spawnFood() {
+            foodX = Math.floor(Math.random() * ((DIS_WIDTH - SNAKE_BLOCK) / 10)) * 10;
+            foodY = Math.floor(Math.random() * ((DIS_HEIGHT - SNAKE_BLOCK) / 10)) * 10;
+        }
+
+        // Vykreslení skóre
+        function yourScore(score) {
+            ctx.fillStyle = YELLOW;
+            ctx.font = "35px 'Comic Sans MS', cursive, sans-serif";
+            ctx.textAlign = "left";
+            ctx.textBaseline = "top";
+            ctx.fillText("Skóre: " + score, 5, 0);
+        }
+
+        // Vykreslení hada se zaoblenými rohy (border_radius = 5)
+        function ourSnake(snakeBlock, snakeList) {
+            ctx.fillStyle = GREEN;
+            for (let i = 0; i < snakeList.length; i++) {
+                ctx.beginPath();
+                ctx.roundRect(snakeList[i][0], snakeList[i][1], snakeBlock, snakeBlock, 5);
+                ctx.fill();
+            }
+        }
+
+        // Zpráva uprostřed obrazovky
+        function message(msg, color) {
+            ctx.fillStyle = color;
+            ctx.font = "25px Bahnschrift, Arial, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(msg, DIS_WIDTH / 2, DIS_HEIGHT / 2);
+        }
+
+        // Inicializace / restart hry
+        function initGame() {
+            gameOver = false;
+            gameClose = false;
+
+            x1 = DIS_WIDTH / 2;
+            y1 = DIS_HEIGHT / 2;
+
+            x1Change = 0;
+            y1Change = 0;
+
+            snakeList = [];
+            lengthOfSnake = 1;
+
+            spawnFood();
+
+            if (gameInterval) clearInterval(gameInterval);
+            gameInterval = setInterval(gameLoop, 1000 / FPS);
+        }
+
+        // Hlavní herní smyčka
+        function gameLoop() {
+            if (gameOver) {
+                clearInterval(gameInterval);
+                ctx.fillStyle = BLACK;
+                ctx.fillRect(0, 0, DIS_WIDTH, DIS_HEIGHT);
+                message("Hra ukončena. Obnov stránku (F5) pro nový start.", WHITE);
+                return;
+            }
+
+            if (gameClose) {
+                ctx.fillStyle = BLACK;
+                ctx.fillRect(0, 0, DIS_WIDTH, DIS_HEIGHT);
+                message("Prohrál jsi! Stiskni C=Hraj znovu nebo Q=Quit", RED);
+                yourScore(lengthOfSnake - 1);
+                return;
+            }
+
+            // Kontrola nárazu do stěny
+            if (x1 >= DIS_WIDTH || x1 < 0 || y1 >= DIS_HEIGHT || y1 < 0) {
+                gameClose = true;
+                return;
+            }
+
+            x1 += x1Change;
+            y1 += y1Change;
+
+            // Vyčištění plátna
+            ctx.fillStyle = BLACK;
+            ctx.fillRect(0, 0, DIS_WIDTH, DIS_HEIGHT);
+
+            // Vykreslení jídla (zaoblené jako v Pygame)
+            ctx.fillStyle = BLUE;
+            ctx.beginPath();
+            ctx.roundRect(foodX, foodY, SNAKE_BLOCK, SNAKE_BLOCK, 5);
+            ctx.fill();
+
+            // Pohyb těla hada
+            let snakeHead = [x1, y1];
+            snakeList.push(snakeHead);
+
+            if (snakeList.length > lengthOfSnake) {
+                snakeList.shift();
+            }
+
+            // Kontrola nárazu hada do sebe sama
+            for (let i = 0; i < snakeList.length - 1; i++) {
+                if (snakeList[i][0] === snakeHead[0] && snakeList[i][1] === snakeHead[1]) {
+                    gameClose = true;
+                }
+            }
+
+            ourSnake(SNAKE_BLOCK, snakeList);
+            yourScore(lengthOfSnake - 1);
+
+            // Snězení jídla
+            if (x1 === foodX && y1 === foodY) {
+                spawnFood();
+                lengthOfSnake += 1;
+            }
+        }
+
+        // Ovládání klávesnicí
+        document.addEventListener("keydown", function(event) {
+            if (gameClose) {
+                if (event.key === "q" || event.key === "Q") {
+                    gameOver = true;
+                    gameClose = false;
+                } else if (event.key === "c" || event.key === "C") {
+                    initGame();
+                }
+                return;
+            }
+
+            if (event.key === "ArrowLeft") {
+                event.preventDefault();
+                x1Change = -10;
+                y1Change = 0;
+            } else if (event.key === "ArrowRight") {
+                event.preventDefault();
+                x1Change = 10;
+                y1Change = 0;
+            } else if (event.key === "ArrowUp") {
+                event.preventDefault();
+                y1Change = -10;
+                x1Change = 0;
+            } else if (event.key === "ArrowDown") {
+                event.preventDefault();
+                y1Change = 10;
+                x1Change = 0;
+            }
+        });
+
+        // Spuštění hry
+        initGame();
+    </script>
+</body>
+</html>
