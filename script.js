@@ -7,9 +7,10 @@ const APP_REGISTRY = {
   calculator: { title: 'KCalc (Kalkulačka)', w: 340, h: 570 },
   textbook: { title: 'Učebnice a slovníky', w: 680, h: 500 },
   games: { title: 'CrazyGames Centrum', w: 850, h: 550 },
-  html: { title: 'Prohlížeč html stranek', w: 960, h: 680 },
   pygame: { title: 'Pygame Herní Složka', w: 960, h: 680 },
+  html: { title: 'Prohlížeč HTML stránek', w: 960, h: 680 }
 };
+
 
 const HTML_LIST = [
   { name: '', path: 'html/kalkulator/index.html' },
@@ -126,8 +127,13 @@ function renderTaskbar() {
 function buildDesktopIcons() {
   if (!desktopIcons) return; desktopIcons.innerHTML = '';
   const apps = [
-    ['Notepad', 'notepad', '✎'], ['Files', 'files', '📁'], ['Calculator', 'calculator', '🧮'], 
-    ['Učebnice', 'textbook', '📚'], ['Web Hry', 'games', '🎮'], ['Pygame Hry', 'pygame', '🐍'], ['HTML prohlížeč', 'html', '🌐']
+    ['Notepad', 'notepad', '✎'], 
+    ['Files', 'files', '📁'], 
+    ['Calculator', 'calculator', '🧮'], 
+    ['Učebnice', 'textbook', '📚'], 
+    ['Web Hry', 'games', '🎮'], 
+    ['Pygame Hry', 'pygame', '🐍'],
+    ['HTML prohlížeč', 'html', '🌐']
   ];
   apps.forEach(([name, app, em]) => {
     const btn = document.createElement('button'); btn.className = 'desktop-icon';
@@ -135,6 +141,7 @@ function buildDesktopIcons() {
     btn.addEventListener('click', () => requestPid(app)); desktopIcons.appendChild(btn);
   });
 }
+
 
 function allocateRenderLayer(win) {
   const node = document.createElement('div'); node.className = 'window'; node.id = win.id;
