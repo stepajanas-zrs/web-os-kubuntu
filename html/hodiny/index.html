@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Světový čas</title>
+<style>
+  body { background: #0f172a; color: #f8fafc; font-family: sans-serif; display: flex; justify-content: center; padding: 25px 15px; margin: 0; }
+  .box { background: #1e293b; padding: 22px; border-radius: 14px; width: 100%; max-width: 480px; box-shadow: 0 10px 25px rgba(0,0,0,.5); }
+  h2 { margin: 0 0 15px; font-size: 20px; display: flex; justify-content: space-between; }
+  .panel, .row { background: #0b1120; border: 1px solid #334155; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .row { display: flex; justify-content: space-between; align-items: center; }
+  .flex { display: flex; gap: 8px; margin-bottom: 15px; }
+  select, button { padding: 9px 12px; border-radius: 8px; border: 1px solid #334155; background: #0b1120; color: #f8fafc; cursor: pointer; }
+  select { flex: 1; }
+  .btn-add { background: #38bdf8; color: #0f172a; font-weight: bold; border: none; }
+  input[type="range"] { width: 100%; margin-top: 8px; accent-color: #38bdf8; }
+  .time { font-size: 24px; font-weight: bold; font-variant-numeric: tabular-nums; }
+  .sub { font-size: 12px; color: #94a3b8; }
+  .del { background: none; border: none; color: #94a3b8; font-size: 16px; padding: 0 4px; }
+  .del:hover { color: #ef4444; }
+</style>
+</head>
+<body>
+<div class="box">
+  <h2>Světový čas <span id="badge" class="sub">Živě</span></h2>
+
+  <div class="panel">
+    <div style="display:flex; justify-content:space-between; font-size:13px;">
+      <span>Posun času: <strong id="offTxt">0 hod</strong></span>
+      <button onclick="setOff(0)" style="padding:3px 8px; font-size:11px;">Teď</button>
+    </div>
+    <input type="range" id="slider" min="-12" max="12" step="0.5" value="0" oninput="setOff(this.value)">
+  </div>
+
+  <div class="flex">
+    <select id="sel">
+      <option value="Europe/Prague">Praha</option>
+      <option value="Europe/London">Londýn</option>
+      <option value="America/New_York">New York</option>
+      <option value="America/Los_Angeles">Los Angeles</option>
+      <option value="Asia/Tokyo">Tokio</option>
+      <option value="Asia/Dubai">Dubaj</option>
+      <option value="Australia/Sydney">Sydney</option>
+    </select>
+    <button class="btn-add" onclick="add()">+ Přidat</button>
+  </div>
+
+  <div id="list"></div>
+</div>
+
+<script>
+  const NAMES = { 'Europe/Prague':'Praha', 'Europe/London':'Londýn', 'America/New_York':'New York', 'America/Los_Angeles':'Los Angeles', 'Asia/Tokyo':'Tokio', 'Asia/Dubai':'Dubaj', 'Australia/Sydney':'Sydney' };
+  let zones = JSON.parse(localStorage.getItem('wc_zones')) || ['Europe/Prague', 'Europe/London', 'America/New_York', 'Asia/Tokyo'];
+  let offset = 0;
+
+  function setOff(v) {
+    offset = parseFloat(v);
+    document.getElementById('slider').value = offset;
+    document.getElementById('offTxt').textContent = (offset > 0 ? '+' : '') + offset + ' hod';
+    document.getElementById('badge').textContent = offset === 0 ? 'Živě' : 'Plánovač';
+    render();
+  }
+
+  function add() {
+    const z = document.getElementById('sel').value;
+    if (!zones.includes(z)) { zones.push(z); save(); }
+  }
+
+  function del(z) {
+    zones = zones.filter(item => item !== z);
+    save();
+  }
+
+  function save() {
+    localStorage.setItem('wc_zones', JSON.stringify(zones));
+    render();
+  }
+
+  function render() {
+    const now = new Date(Date.now() + offset * 3600000);
+    document.getElementById('list').innerHTML = zones.map(z => {
+      const time = now.toLocaleTimeString('cs-CZ', { timeZone: z, hour: '2-digit', minute: '2-digit', second: offset === 0 ? '2-digit' : undefined });
+      const date = now.toLocaleDateString('cs-CZ', { timeZone: z, weekday: 'short', day: 'numeric', month: 'numeric' });
+      const hr = parseInt(now.toLocaleTimeString('en-GB', { timeZone: z, hour: '2-digit', hour12: false }), 10);
+      const icon = (hr >= 7 && hr < 20) ? '☀️' : '🌙';
+      return `<div class="row">
+        <div><strong>${NAMES[z] || z}</strong> ${icon}<div class="sub">${date}</div></div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="time">${time}</span>
+          ${zones.length > 1 ? `<button class="del" onclick="del('${z}')">✕</button>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  setInterval(() => { if (offset === 0) render(); }, 1000);
+  render();
+</script>
+</body>
+</html>
