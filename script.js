@@ -13,13 +13,13 @@ const APP_REGISTRY = {
 
 
 const HTML_LIST = [
-  { name: '', path: 'html/kalkulator/index.html' },
+  { name: 'kalkulačka', path: 'html/kalkulator/index.html' },
+  { name: 'Aimy', path: 'html/aimy/index.html' },
 ];
 
 // SEZNAM VAŠICH HER ZE SLOŽKY "pygame_hry"
 const PYGAME_LIST = [
   { name: 'Moje Hra 1', path: 'moje_hry/snake/index.html' },
-  { name: 'Aimy', path: 'html/aimy/index.html' },
   { name: 'folow_block', path: 'html/folow_block/index.html' },
   { name: 'subway', path: 'html/subway/index.html' },
 ];
