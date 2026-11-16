@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kolo štěstí</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --border: #334155;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: var(--card);
+            padding: 28px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 30px;
+            max-width: 780px;
+            width: 100%;
+            align-items: center;
+        }
+
+        @media (max-width: 700px) {
+            .container {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+        }
+
+        .wheel-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .pointer {
+            width: 0;
+            height: 0;
+            border-left: 14px solid transparent;
+            border-right: 14px solid transparent;
+            border-top: 26px solid #f8fafc;
+            position: absolute;
+            top: -10px;
+            z-index: 10;
+            filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.6));
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+            border-radius: 50%;
+            box-shadow: 0 0 0 6px var(--border), 0 12px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .winner-banner {
+            margin-top: 18px;
+            min-height: 32px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #10b981;
+            text-align: center;
+        }
+
+        .controls-section {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            height: 100%;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        p {
+            margin: 0;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            background-color: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        textarea:focus {
+            border-color: var(--primary);
+        }
+
+        .btn-spin {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .btn-spin:hover:not(:disabled) {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-spin:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        .btn-spin:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--muted);
+            border: 1px solid var(--border);
+            padding: 9px;
+            font-size: 13px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="wheel-section">
+        <div class="pointer"></div>
+        <canvas id="wheelCanvas" width="380" height="380"></canvas>
+        <div class="winner-banner" id="winnerText">Klikněte na Roztočit</div>
+    </div>
+
+    <div class="controls-section">
+        <h2>Kolo štěstí</h2>
+        <p>Napište každou možnost na samostatný řádek:</p>
+        <textarea id="itemsInput" oninput="updateItems()">Pizza
+Burger
+Těstoviny
+Sushi
+Řízek s bramborem
+Salát</textarea>
+        <button class="btn-spin" id="spinBtn" onclick="spinWheel()">Roztočit kolo</button>
+        <button class="btn-secondary" onclick="shuffleItems()">Zamíchat pořadí</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    const itemsInput = document.getElementById('itemsInput');
+    const spinBtn = document.getElementById('spinBtn');
+    const winnerText = document.getElementById('winnerText');
+
+    const COLORS = [
+        '#ef4444', '#3b82f6', '#10b981', '#f59e0b',
+        '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'
+    ];
+
+    let items = [];
+    let currentAngle = 0;
+    let isSpinning = false;
+
+    function getItemsList() {
+        return itemsInput.value
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0);
+    }
+
+    function updateItems() {
+        items = getItemsList();
+        localStorage.setItem('wheelItems', itemsInput.value);
+        drawWheel();
+    }
+
+    function drawWheel() {
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = centerX - 5;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (items.length === 0) {
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = '#334155';
+            ctx.fill();
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '16px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Zadejte alespoň jednu položku', centerX, centerY);
+            return;
+        }
+
+        const arcSize = (2 * Math.PI) / items.length;
+
+        for (let i = 0; i < items.length; i++) {
+            const angle = currentAngle + i * arcSize;
+
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, angle, angle + arcSize);
+            ctx.closePath();
+
+            ctx.fillStyle = COLORS[i % COLORS.length];
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#0f172a';
+            ctx.stroke();
+
+            // Vykreslení textu uvnitř výseče
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(angle + arcSize / 2);
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 15px sans-serif';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+            ctx.shadowBlur = 4;
+
+            let label = items[i];
+            if (label.length > 18) label = label.substring(0, 16) + '…';
+            ctx.fillText(label, radius - 18, 5);
+            ctx.restore();
+        }
+
+        // Středový kruh
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 22, 0, 2 * Math.PI);
+        ctx.fillStyle = '#0f172a';
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#f8fafc';
+        ctx.stroke();
+    }
+
+    function spinWheel() {
+        if (isSpinning || items.length < 2) {
+            if (items.length < 2) alert('Zadejte alespoň dvě možnosti.');
+            return;
+        }
+
+        isSpinning = true;
+        spinBtn.disabled = true;
+        itemsInput.disabled = true;
+        winnerText.textContent = 'Losuji...';
+        winnerText.style.color = '#94a3b8';
+
+        const duration = 4000; // 4 sekundy
+        const startAngle = currentAngle;
+        const extraSpins = (5 + Math.random() * 5) * 2 * Math.PI;
+        const targetAngle = startAngle + extraSpins;
+        const startTime = performance.now();
+
+        function animate(now) {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+
+            // Plynulé zpomalování (ease-out cubic)
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+            currentAngle = startAngle + (targetAngle - startAngle) * easeOut;
+
+            drawWheel();
+
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                isSpinning = false;
+                spinBtn.disabled = false;
+                itemsInput.disabled = false;
+                determineWinner();
+            }
+        }
+
+        requestAnimationFrame(animate);
+    }
+
+    function determineWinner() {
+        const arcSize = (2 * Math.PI) / items.length;
+        // Šipka ukazuje nahoru (úhel 270 stupňů = 1.5 * PI)
+        const pointerAngle = (1.5 * Math.PI - (currentAngle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+        const winningIndex = Math.floor(pointerAngle / arcSize);
+
+        winnerText.textContent = 'Vyhrává: ' + items[winningIndex];
+        winnerText.style.color = '#10b981';
+    }
+
+    function shuffleItems() {
+        if (isSpinning) return;
+        let list = getItemsList();
+        for (let i = list.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [list[i], list[j]] = [list[j], list[i]];
+        }
+        itemsInput.value = list.join('\n');
+        updateItems();
+    }
+
+    // Načtení uloženého seznamu při spuštění
+    const savedItems = localStorage.getItem('wheelItems');
+    if (savedItems !== null) {
+        itemsInput.value = savedItems;
+    }
