@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Převodník čísel a soustav</title>
+<style>
+  body { background: #0f172a; color: #f8fafc; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 15px; }
+  .box { background: #1e293b; padding: 26px; border-radius: 16px; width: 100%; max-width: 440px; box-shadow: 0 10px 25px rgba(0,0,0,.5); }
+  h2 { margin: 0 0 18px; text-align: center; font-size: 21px; }
+  .field { background: #0b1120; border: 1px solid #334155; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; }
+  .field:focus-within { border-color: #38bdf8; }
+  label { display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; }
+  input { width: 100%; background: transparent; border: none; color: #f8fafc; font-family: monospace; font-size: 18px; font-weight: bold; outline: none; }
+  .copy { color: #38bdf8; cursor: pointer; text-transform: none; }
+  .copy:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="box">
+  <h2>Převodník čísel</h2>
+
+  <div class="field">
+    <label><span>Desítková soustava (DEC)</span><span class="copy" onclick="cp('dec')">Kopírovat</span></label>
+    <input type="text" id="dec" value="2026" oninput="fromDec(this.value)">
+  </div>
+
+  <div class="field">
+    <label><span>Římské číslice (1 – 3999)</span><span class="copy" onclick="cp('rom')">Kopírovat</span></label>
+    <input type="text" id="rom" oninput="fromRom(this.value)">
+  </div>
+
+  <div class="field">
+    <label><span>Dvojková soustava (BIN)</span><span class="copy" onclick="cp('bin')">Kopírovat</span></label>
+    <input type="text" id="bin" oninput="fromBase(this.value, 2)">
+  </div>
+
+  <div class="field">
+    <label><span>Šestnáctková soustava (HEX)</span><span class="copy" onclick="cp('hex')">Kopírovat</span></label>
+    <input type="text" id="hex" oninput="fromBase(this.value, 16)">
+  </div>
+</div>
+
+<script>
+  const el = id => document.getElementById(id);
+
+  function toRoman(num) {
+    if (num < 1 || num > 3999) return 'Mimo rozsah (1–3999)';
+    const map = [[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
+    let res = '';
+    for (const [v, s] of map) while (num >= v) { res += s; num -= v; }
+    return res;
+  }
+
+  function parseRoman(str) {
+    const s = str.toUpperCase().trim();
+    if (!/^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/.test(s) || !s) return NaN;
+    const val = { I:1, V:5, X:10, L:50, C:100, D:500, M:1000 };
+    let total = 0;
+    for (let i = 0; i < s.length; i++) {
+      const cur = val[s[i]], next = val[s[i+1]];
+      total += (next > cur) ? -cur : cur;
+    }
+    return total;
+  }
+
+  function updateAll(n, skipId) {
+    if (isNaN(n) || n < 0) {
+      ['dec','rom','bin','hex'].forEach(id => { if (id !== skipId) el(id).value = ''; });
+      return;
+    }
+    if (skipId !== 'dec') el('dec').value = n;
+    if (skipId !== 'rom') el('rom').value = toRoman(n);
+    if (skipId !== 'bin') el('bin').value = n.toString(2);
+    if (skipId !== 'hex') el('hex').value = n.toString(16).toUpperCase();
+  }
+
+  function fromDec(v) {
+    const clean = v.replace(/\D/g, '');
+    el('dec').value = clean;
+    updateAll(clean ? parseInt(clean, 10) : NaN, 'dec');
+  }
+
+  function fromRom(v) {
+    updateAll(parseRoman(v), 'rom');
+  }
+
+  function fromBase(v, base) {
+    const regex = base === 2 ? /[^01]/g : /[^0-9a-fA-F]/g;
+    const id = base === 2 ? 'bin' : 'hex';
+    const clean = v.replace(regex, '').toUpperCase();
+    el(id).value = clean;
+    updateAll(clean ? parseInt(clean, base) : NaN, id);
+  }
+
+  function cp(id) {
+    const val = el(id).value;
+    if (val && !val.startsWith('Mimo')) navigator.clipboard.writeText(val);
+  }
+
+  fromDec('2026');
+</script>
+</body>
+</html>
