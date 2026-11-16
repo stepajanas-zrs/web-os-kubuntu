@@ -19,7 +19,8 @@ const HTML_LIST = [
 
 // SEZNAM VAŠICH HER ZE SLOŽKY "pygame_hry"
 const PYGAME_LIST = [
-  { name: 'Moje Hra 1', path: 'moje_hry/snake/index.html' },
+  { name: 'snake', path: 'moje_hry/snake/index.html' },
+  { name: 'Moje Hra', path: 'moje_hry/snake2/index.html' },
   { name: 'folow_block', path: 'html/folow_block/index.html' },
   { name: 'subway', path: 'html/subway/index.html' },
 ];
