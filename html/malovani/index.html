@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kreslicí plátno</title>
+    <style>
+        :root {
+            --bg: #1e293b;
+            --toolbar: #0f172a;
+            --text: #f8fafc;
+            --primary: #3b82f6;
+            --border: #334155;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        .toolbar {
+            background-color: var(--toolbar);
+            border: 1px solid var(--border);
+            padding: 12px 16px;
+            border-radius: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            max-width: 800px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .tool-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .colors {
+            display: flex;
+            gap: 6px;
+        }
+
+        .color-swatch {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.15s;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.15);
+        }
+
+        .color-swatch.active {
+            border-color: white;
+            transform: scale(1.15);
+        }
+
+        input[type="color"] {
+            width: 30px;
+            height: 30px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        input[type="range"] {
+            width: 90px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .btn {
+            background-color: #1e293b;
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #334155;
+        }
+
+        .btn.active {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .btn-save {
+            background-color: #10b981;
+            border-color: #10b981;
+            color: white;
+            margin-left: auto;
+        }
+
+        .btn-save:hover {
+            background-color: #059669;
+        }
+
+        canvas {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            cursor: crosshair;
+            touch-action: none;
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div class="toolbar">
+    <div class="colors" id="colorPalette">
+        <div class="color-swatch active" style="background: #000000;" onclick="setColor('#000000', this)"></div>
+        <div class="color-swatch" style="background: #ef4444;" onclick="setColor('#ef4444', this)"></div>
+        <div class="color-swatch" style="background: #3b82f6;" onclick="setColor('#3b82f6', this)"></div>
+        <div class="color-swatch" style="background: #10b981;" onclick="setColor('#10b981', this)"></div>
+        <div class="color-swatch" style="background: #f59e0b;" onclick="setColor('#f59e0b', this)"></div>
+        <input type="color" id="customColor" value="#8b5cf6" onchange="setCustomColor(this.value)" title="Vlastní barva">
+    </div>
+
+    <div class="tool-group">
+        <span style="font-size: 13px; color: #94a3b8;">Štětec:</span>
+        <input type="range" id="brushSize" min="1" max="40" value="5" oninput="updateSize(this.value)">
+        <span id="sizeLabel" style="font-size: 13px; width: 24px;">5px</span>
+    </div>
+
+    <div class="tool-group">
+        <button class="btn" id="eraserBtn" onclick="toggleEraser()">Guma</button>
+        <button class="btn" onclick="undo()">Zpět</button>
+        <button class="btn" onclick="clearCanvas()">Smazat</button>
+    </div>
+
+    <button class="btn btn-save" onclick="downloadImage()">Uložit PNG</button>
+</div>
+
+<canvas id="canvas" width="800" height="500"></canvas>
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const sizeLabel = document.getElementById('sizeLabel');
+    const eraserBtn = document.getElementById('eraserBtn');
+
+    let isDrawing = false;
+    let currentColor = '#000000';
+    let currentSize = 5;
+    let isEraser = false;
+    let history = [];
+
+    // Vyplní plátno bílou barvou (aby uložený PNG nebyl průhledný)
+    function initCanvas() {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        saveState();
+    }
+
+    function saveState() {
+        if (history.length > 20) history.shift();
+        history.push(canvas.toDataURL());
+    }
+
+    function undo() {
+        if (history.length <= 1) return;
+        history.pop();
+        const img = new Image();
+        img.src = history[history.length - 1];
+        img.onload = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+        };
+    }
+
+    function getCoords(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+
+        if (e.touches && e.touches.length > 0) {
+            return {
+                x: (e.touches[0].clientX - rect.left) * scaleX,
+                y: (e.touches[0].clientY - rect.top) * scaleY
+            };
+        }
+        return {
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY
+        };
+    }
+
+    function startDrawing(e) {
+        isDrawing = true;
+        const pos = getCoords(e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+        draw(e);
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const pos = getCoords(e);
+
+        ctx.lineWidth = currentSize;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = isEraser ? '#ffffff' : currentColor;
+
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+    }
+
+    function stopDrawing() {
+        if (!isDrawing) return;
+        isDrawing = false;
+        ctx.beginPath();
+        saveState();
+    }
+
+    function setColor(color, el) {
+        isEraser = false;
+        eraserBtn.classList.remove('active');
+        currentColor = color;
+        document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+        if (el) el.classList.add('active');
+    }
+
+    function setCustomColor(color) {
+        setColor(color, null);
+    }
+
+    function updateSize(val) {
+        currentSize = val;
+        sizeLabel.textContent = val + 'px';
+    }
+
+    function toggleEraser() {
+        isEraser = !isEraser;
+        eraserBtn.classList.toggle('active', isEraser);
+    }
+
+    function clearCanvas() {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        saveState();
+    }
+
+    function downloadImage() {
+        const link = document.createElement('a');
+        link.download = 'kresba.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+
+    // Ovládání myší
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    window.addEventListener('mouseup', stopDrawing);
+
+    // Ovládání dotykem
+    canvas.addEventListener('touchstart', startDrawing, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    window.addEventListener('touchend', stopDrawing);
+
+    initCanvas();
+</script>
+
+</body>
+</html>
