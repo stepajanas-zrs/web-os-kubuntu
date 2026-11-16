@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Římská kalkulačka</title>
+<style>
+  body { background: #0f172a; color: #f8fafc; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 15px; }
+  .box { background: #1e293b; padding: 24px; border-radius: 16px; width: 100%; max-width: 380px; box-shadow: 0 10px 25px rgba(0,0,0,.5); }
+  h2 { margin: 0 0 14px; text-align: center; font-size: 19px; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase; }
+  .screen { background: #0b1120; border: 1px solid #334155; border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; text-align: right; min-height: 76px; display: flex; flex-direction: column; justify-content: space-between; }
+  .expr { font-size: 14px; color: #38bdf8; font-family: monospace; min-height: 18px; }
+  .main { font-size: 28px; font-weight: bold; font-family: 'Times New Roman', serif; letter-spacing: 1.5px; word-break: break-all; }
+  .arab { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  button { background: #0b1120; color: #f8fafc; border: 1px solid #334155; padding: 14px 8px; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.15s; font-family: 'Times New Roman', serif; }
+  button:hover { border-color: #38bdf8; background: #162032; }
+  button:active { transform: scale(0.96); }
+  .op { background: #162032; color: #38bdf8; font-family: sans-serif; }
+  .eq { background: #38bdf8; color: #0f172a; border-color: #38bdf8; font-family: sans-serif; grid-column: span 2; }
+  .eq:hover { background: #0284c7; color: #fff; }
+  .clr { color: #ef4444; font-family: sans-serif; }
+</style>
+</head>
+<body>
+<div class="box">
+  <h2>Kalkulačka Římanů</h2>
+  <div class="screen">
+    <div class="expr" id="expr"></div>
+    <div class="main" id="main">0</div>
+    <div class="arab" id="arab">Arabsky: 0</div>
+  </div>
+
+  <div class="grid">
+    <button onclick="addChar('M')">M</button>
+    <button onclick="addChar('D')">D</button>
+    <button onclick="addChar('C')">C</button>
+    <button class="op" onclick="setOp('÷')">÷</button>
+
+    <button onclick="addChar('L')">L</button>
+    <button onclick="addChar('X')">X</button>
+    <button onclick="addChar('V')">V</button>
+    <button class="op" onclick="setOp('×')">×</button>
+
+    <button onclick="addChar('I')">I</button>
+    <button class="clr" onclick="back()">⌫</button>
+    <button class="clr" onclick="clr()">C</button>
+    <button class="op" onclick="setOp('−')">−</button>
+
+    <button class="eq" onclick="calc()">=</button>
+    <button class="op" style="grid-column: span 2;" onclick="setOp('+')">+</button>
+  </div>
+</div>
+
+<script>
+  let cur = '', prev = null, op = null, resetNext = false;
+
+  function toRoman(n) {
+    if (n === 0) return 'NULLA (0)';
+    if (n < 1 || n > 3999) return 'Mimo rozsah (I – MMMCMXCIX)';
+    const map = [[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
+    let r = '';
+    for (const [v, s] of map) while (n >= v) { r += s; n -= v; }
+    return r;
+  }
+
+  function fromRoman(s) {
+    if (!s) return 0;
+    if (!/^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/.test(s)) return null;
+    const val = { I:1, V:5, X:10, L:50, C:100, D:500, M:1000 };
+    let sum = 0;
+    for (let i = 0; i < s.length; i++) {
+      const c = val[s[i]], nxt = val[s[i+1]];
+      sum += (nxt > c) ? -c : c;
+    }
+    return sum;
+  }
+
+  function updateUI(errMsg) {
+    const mainEl = document.getElementById('main');
+    const arabEl = document.getElementById('arab');
+    const exprEl = document.getElementById('expr');
+
+    exprEl.textContent = (prev !== null && op) ? `${toRoman(prev)} (${prev}) ${op}` : '';
+
+    if (errMsg) {
+      mainEl.textContent = errMsg;
+      mainEl.style.color = '#ef4444';
+      arabEl.textContent = 'Neplatný zápis nebo rozsah';
+      return;
+    }
+
+    mainEl.style.color = '#f8fafc';
+    if (!cur) {
+      mainEl.textContent = '—';
+      arabEl.textContent = 'Zadejte římské číslo';
+      return;
+    }
+
+    const num = fromRoman(cur);
+    mainEl.textContent = cur;
+    arabEl.textContent = num !== null ? `Arabsky: ${num}` : 'Neplatný římský zápis!';
+    if (num === null) mainEl.style.color = '#f59e0b';
+  }
+
+  function addChar(ch) {
+    if (resetNext) { cur = ''; resetNext = false; }
+    cur += ch;
+    updateUI();
+  }
+
+  function back() {
+    if (resetNext) { clr(); return; }
+    cur = cur.slice(0, -1);
+    updateUI();
+  }
+
+  function clr() {
+    cur = ''; prev = null; op = null; resetNext = false;
+    updateUI();
+  }
+
+  function setOp(nextOp) {
+    const num = fromRoman(cur);
+    if (num === null) { updateUI('Chybný zápis'); return; }
+    if (prev !== null && op && !resetNext) calc();
+    prev = cur ? fromRoman(cur) : (prev || 0);
+    op = nextOp;
+    resetNext = true;
+    updateUI();
+  }
+
+  function calc() {
+    if (prev === null || !op) return;
+    const b = fromRoman(cur);
+    if (b === null) { updateUI('Chybný zápis'); return; }
+
+    let res = 0;
+    if (op === '+') res = prev + b;
+    if (op === '−') res = prev - b;
+    if (op === '×') res = prev * b;
+    if (op === '÷') {
+      if (b === 0) { clr(); updateUI('Dělení nulou'); return; }
+      res = Math.floor(prev / b);
+    }
+
+    prev = null; op = null; resetNext = true;
+
+    if (res === 0) {
+      cur = '';
+      document.getElementById('expr').textContent = '';
+      document.getElementById('main').textContent = 'NULLA';
+      document.getElementById('arab').textContent = 'Arabsky: 0 (Římané nulu neznali)';
+      return;
+    }
+
+    if (res < 1 || res > 3999) {
+      cur = '';
+      updateUI('Mimo rozsah (I – MMMCMXCIX)');
+      return;
+    }
+
+    cur = toRoman(res);
+    updateUI();
+  }
+
+  document.addEventListener('keydown', e => {
+    const k = e.key.toUpperCase();
+    if ('IVXLCDM'.includes(k)) addChar(k);
+    else if (e.key === '+') setOp('+');
+    else if (e.key === '-') setOp('−');
+    else if (e.key === '*') setOp('×');
+    else if (e.key === '/') { e.preventDefault(); setOp('÷'); }
+    else if (e.key === 'Enter' || e.key === '=') calc();
+    else if (e.key === 'Backspace') back();
+    else if (e.key === 'Escape') clr();
+  });
+
+  updateUI();
+</script>
+</body>
+</html>
