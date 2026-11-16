@@ -3,56 +3,69 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Univerzální dešifrátor</title>
+<title>Dešifrátor zpráv</title>
 <style>
-  body { background: #0f172a; color: #f8fafc; font-family: sans-serif; display: flex; justify-content: center; padding: 25px 15px; margin: 0; }
-  .box { background: #1e293b; padding: 24px; border-radius: 16px; width: 100%; max-width: 760px; box-shadow: 0 10px 25px rgba(0,0,0,.5); }
-  h2 { margin: 0 0 6px; font-size: 21px; }
+  body { background: #0f172a; color: #f8fafc; font-family: sans-serif; margin: 0; padding: 20px; box-sizing: border-box; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; }
+  .layout { display: grid; grid-template-columns: 340px 1fr; gap: 18px; width: 100%; max-width: 1120px; align-items: start; }
+  @media (max-width: 820px) { .layout { grid-template-columns: 1fr; } }
+  .panel { background: #1e293b; padding: 22px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,.5); }
+  h2 { margin: 0 0 6px; font-size: 20px; }
   .sub { font-size: 13px; color: #94a3b8; margin-bottom: 16px; }
-  textarea { width: 100%; height: 90px; background: #0b1120; color: #f8fafc; border: 1px solid #334155; border-radius: 10px; padding: 12px; font-family: monospace; font-size: 15px; box-sizing: border-box; outline: none; resize: vertical; margin-bottom: 12px; }
-  textarea:focus { border-color: #38bdf8; }
-  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
-  .preset { background: #0b1120; color: #94a3b8; border: 1px solid #334155; padding: 5px 10px; border-radius: 14px; font-size: 11px; cursor: pointer; }
+  label { display: block; font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: bold; margin-bottom: 6px; }
+  textarea { width: 100%; height: 150px; background: #0b1120; color: #f8fafc; border: 1px solid #334155; border-radius: 10px; padding: 12px; font-family: monospace; font-size: 14px; box-sizing: border-box; outline: none; resize: vertical; margin-bottom: 14px; }
+  textarea:focus, input:focus { border-color: #38bdf8; }
+  .key-box { background: #0b1120; border: 1px solid #334155; padding: 10px 12px; border-radius: 10px; margin-bottom: 16px; }
+  .key-box input { width: 100%; background: transparent; border: none; color: #38bdf8; font-family: monospace; font-size: 15px; font-weight: bold; outline: none; margin-top: 4px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; }
+  .preset { background: #0b1120; color: #94a3b8; border: 1px solid #334155; padding: 6px 10px; border-radius: 8px; font-size: 11px; cursor: pointer; }
   .preset:hover { border-color: #38bdf8; color: #f8fafc; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
-  @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; margin-bottom: 16px; }
   .card { background: #0b1120; border: 1px solid #334155; border-radius: 10px; padding: 10px 12px; }
+  .card.hit { border-color: #10b981; background: rgba(16,185,129,.08); }
   .card-top { display: flex; justify-content: space-between; font-size: 11px; color: #38bdf8; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
+  .card.hit .card-top { color: #10b981; }
   .cp { color: #94a3b8; cursor: pointer; text-transform: none; font-weight: normal; }
   .cp:hover { color: #fff; text-decoration: underline; }
-  .val { font-family: monospace; font-size: 13px; word-break: break-all; color: #e2e8f0; max-height: 70px; overflow-y: auto; }
+  .val { font-family: monospace; font-size: 13px; word-break: break-all; color: #e2e8f0; max-height: 75px; overflow-y: auto; }
   .empty { color: #475569; font-style: italic; }
   details { background: #0b1120; border: 1px solid #334155; border-radius: 10px; padding: 10px 14px; }
   summary { cursor: pointer; font-size: 13px; font-weight: bold; color: #38bdf8; }
-  .caesar-list { margin-top: 10px; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 6px; font-family: monospace; font-size: 12px; }
+  .caesar-list { margin-top: 10px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; font-family: monospace; font-size: 12px; }
   .c-item { background: #162032; padding: 5px 8px; border-radius: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .c-item.best { border: 1px solid #10b981; background: rgba(16,185,129,.15); color: #fff; }
 </style>
 </head>
 <body>
-<div class="box">
-  <h2>Univerzální dešifrátor</h2>
-  <div class="sub">Vložte zašifrovaný text – aplikace okamžitě vyzkouší všechny známé metody najednou</div>
-
-  <textarea id="in" placeholder="Vložte šifru, kód, Morseovku, binární text..." oninput="decodeAll()">Wdmqd csudyd</textarea>
-
-  <div class="presets">
-    <span style="font-size:11px; color:#64748b; align-self:center;">Ukázky:</span>
-    <button class="preset" onclick="setEx('Wdmqd csudyd')">Caesar</button>
-    <button class="preset" onclick="setEx('.- .... --- .--- / ... ...- . - .')">Morseovka</button>
-    <button class="preset" onclick="setEx('QWhvaiBzdsSbdGU=')">Base64</button>
-    <button class="preset" onclick="setEx('01000001 01101000 01101111 01101010')">Binární</button>
-    <button class="preset" onclick="setEx('41 68 6f 6a')">Hexadecimální</button>
-    <button class="preset" onclick="setEx('Zslq hevgv')">Atbash</button>
+<div class="layout">
+  <div class="panel">
+    <h2>1. Vstupní šifra</h2>
+    <div class="sub">Vložte zašifrovaný text k rozluštění</div>
+    <label>Zašifrovaná zpráva</label>
+    <textarea id="in" placeholder="Sem vložte šifru..." oninput="decodeAll()">Wdmqd csudyd sur wbp</textarea>
+    <div class="key-box">
+      <label style="margin:0;">Klíč pro Vigenèrovu šifru</label>
+      <input type="text" id="keyIn" value="HESLO" oninput="decodeAll()">
+    </div>
+    <label>Rychlé ukázky</label>
+    <div class="presets">
+      <button class="preset" onclick="setEx('Wdmqd csudyd sur wbp')">Caesar</button>
+      <button class="preset" onclick="setEx('Aeugl dgtvhl wvs zpq')">Vigenère</button>
+      <button class="preset" onclick="setEx('- .- .--- -. .- / --.. .--. .-. .- ...- .-')">Morseovka</button>
+      <button class="preset" onclick="setEx('VGFqbsOhIHpwcsOhdmE=')">Base64</button>
+      <button class="preset" onclick="setEx('01000001 01101000 01101111 01101010')">Binární</button>
+      <button class="preset" onclick="setEx('20-1-10-14-1 / 26-16-18-1-22-1')">A1Z26</button>
+    </div>
   </div>
-
-  <div class="grid" id="cards"></div>
-
-  <details open>
-    <summary>Caesarova šifra – všech 25 posunů (Brute Force)</summary>
-    <div class="caesar-list" id="caesarList"></div>
-  </details>
+  <div class="panel">
+    <h2>2. Rozluštěné výsledky</h2>
+    <div class="sub">Automatický převod do čitelného textu</div>
+    <div class="grid" id="cards"></div>
+    <details open>
+      <summary>Caesarova šifra – všechny posuny zpět (nejlepší shoda nahoře)</summary>
+      <div class="caesar-list" id="caesarList"></div>
+    </details>
+  </div>
 </div>
-
 <script>
   const MORSE = {
     '.-':'A','-...':'B','-.-.':'C','-..':'D','.':'E','..-.':'F','--.':'G','....':'H','----':'CH',
@@ -62,10 +75,18 @@
     '-....':'6','--...':'7','---..':'8','----.':'9','.-.-.-':'.','--..--':',','..--..':'?','-.-.--':'!'
   };
 
-  function shiftStr(s, n) {
+  const shiftStr = (s, n) => s.replace(/[a-zA-Z]/g, c => {
+    const b = c <= 'Z' ? 65 : 97;
+    return String.fromCharCode(((c.charCodeAt(0) - b + n) % 26 + 26) % 26 + b);
+  });
+
+  function decodeVigenere(s, key) {
+    const k = (key || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z]/g, '');
+    if (!k) return null;
+    let ki = 0;
     return s.replace(/[a-zA-Z]/g, c => {
       const b = c <= 'Z' ? 65 : 97;
-      return String.fromCharCode(((c.charCodeAt(0) - b + n) % 26 + 26) % 26 + b);
+      return String.fromCharCode(((c.charCodeAt(0) - b - (k.charCodeAt(ki++ % k.length) - 65)) % 26 + 26) % 26 + b);
     });
   }
 
@@ -77,49 +98,44 @@
   }
 
   function decodeMorse(s) {
-    if (!/^[.\-\/\s|]+$/.test(s.trim())) return null;
-    const out = s.trim().split(/\s+/).map(t => (t === '/' || t === '|') ? ' ' : (MORSE[t] || '')).join('');
-    return out.trim() ? out : null;
+    const t = s.trim();
+    if (!t || !/^[.\-\/\s|]+$/.test(t) || !/[.\-]/.test(t)) return null;
+    const out = t.split(/\s+/).map(tok => (tok === '/' || tok === '|') ? ' ' : (MORSE[tok] || '?')).join('');
+    return out.includes('?') ? null : out;
   }
 
   function decodeBase64(s) {
+    const clean = s.trim();
+    if (clean.length < 4 || clean.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(clean)) return null;
     try {
-      const clean = s.trim();
-      if (clean.length < 4 || !/^[A-Za-z0-9+/=]+$/.test(clean)) return null;
       const res = decodeURIComponent(escape(atob(clean)));
-      return /[\x00-\x08\x0E-\x1F]/.test(res) ? null : res;
+      return /[\x00-\x08\x0E-\x1F\uFFFD]/.test(res) ? null : res;
     } catch { return null; }
   }
 
   function decodeBin(s) {
     const clean = s.replace(/\s+/g, '');
-    if (clean.length < 8 || clean.length % 8 !== 0 || !/^[01]+$/.test(clean)) return null;
-    try {
-      const bytes = new Uint8Array(clean.match(/.{8}/g).map(b => parseInt(b, 2)));
-      return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-    } catch { return null; }
+    if (clean.length < 8 || clean.length % 8 !== 0 || !/^+$/.test(clean)) return null;
+    try { return new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(clean.match(/.{8}/g).map(b => parseInt(b, 2)))); } catch { return null; }
   }
 
   function decodeHex(s) {
     const clean = s.replace(/\s+/g, '');
-    if (clean.length < 2 || clean.length % 2 !== 0 || !/^[0-9a-fA-F]+$/.test(clean)) return null;
-    try {
-      const bytes = new Uint8Array(clean.match(/.{2}/g).map(h => parseInt(h, 16)));
-      return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-    } catch { return null; }
+    if (clean.length < 4 || clean.length % 2 !== 0 || !/^[0-9a-fA-F]+$/.test(clean)) return null;
+    try { return new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(clean.match(/.{2}/g).map(h => parseInt(h, 16)))); } catch { return null; }
   }
 
   function decodeA1Z26(s) {
-    if (!/^[\d\s\-.,/]+$/.test(s.trim())) return null;
-    const nums = s.trim().split(/[\s\-.,/]+/).filter(Boolean).map(Number);
-    if (!nums.length || nums.some(n => n < 1 || n > 26)) return null;
-    return nums.map(n => String.fromCharCode(64 + n)).join('');
+    const t = s.trim();
+    if (!t || !/^[\d\s\-\/]+$/.test(t) || !/\d/.test(t)) return null;
+    const decoded = t.split(/\s*\/\s*/).map(w => {
+      const nums = w.split(/[\s\-]+/).filter(Boolean).map(Number);
+      return (!nums.length || nums.some(n => n < 1 || n > 26)) ? null : nums.map(n => String.fromCharCode(64 + n)).join('');
+    });
+    return decoded.includes(null) ? null : decoded.join(' ');
   }
 
-  function decodeUrl(s) {
-    if (!s.includes('%')) return null;
-    try { return decodeURIComponent(s); } catch { return null; }
-  }
+  const scoreText = str => (str.toLowerCase().match(/[aeoinstlrkdmvpuhz]/g) || []).length / Math.max(1, str.length);
 
   function setEx(t) {
     document.getElementById('in').value = t;
@@ -128,45 +144,74 @@
 
   function decodeAll() {
     const raw = document.getElementById('in').value;
+    const key = document.getElementById('keyIn').value;
+    const hasLetters = /[a-zA-Z]/.test(raw);
+
     const methods = [
-      { name: 'ROT13 (posun o 13)', val: raw ? shiftStr(raw, 13) : null },
-      { name: 'Atbash (obrácená abeceda)', val: raw ? decodeAtbash(raw) : null },
-      { name: 'Text pozpátku', val: raw ? [...raw].reverse().join('') : null },
-      { name: 'Morseova abeceda', val: decodeMorse(raw) },
-      { name: 'Base64', val: decodeBase64(raw) },
-      { name: 'Binární kód (UTF-8)', val: decodeBin(raw) },
-      { name: 'Hexadecimální kód (UTF-8)', val: decodeHex(raw) },
-      { name: 'A1Z26 (čísla písmen 1–26)', val: decodeA1Z26(raw) },
-      { name: 'URL dekódování (%xx)', val: decodeUrl(raw) },
-      { name: 'Vigenère / ASCII posun -1', val: raw ? [...raw].map(c => String.fromCharCode(c.charCodeAt(0) - 1)).join('') : null }
+      { name: 'Morseova abeceda', val: decodeMorse(raw), strict: true },
+      { name: 'Base64 dekódování', val: decodeBase64(raw), strict: true },
+      { name: 'Binární kód (UTF-8)', val: decodeBin(raw), strict: true },
+      { name: 'Hexadecimální kód', val: decodeHex(raw), strict: true },
+      { name: 'A1Z26 (čísla písmen)', val: decodeA1Z26(raw), strict: true },
+      { name: 'Vigenèrova šifra (' + (key || '—') + ')', val: hasLetters ? decodeVigenere(raw, key) : null },
+      { name: 'Atbash (obrácená abeceda)', val: hasLetters ? decodeAtbash(raw) : null },
+      { name: 'ROT13 (posun zpět o 13)', val: hasLetters ? shiftStr(raw, -13) : null },
+      { name: 'Text pozpátku', val: raw.trim() ? [...raw].reverse().join('') : null },
+      { name: 'URL dekódování (%xx)', val: raw.includes('%') ? (() => { try { return decodeURIComponent(raw); } catch { return null; } })() : null, strict: true }
     ];
 
-    document.getElementById('cards').innerHTML = methods.map((m, i) => `
-      <div class="card">
-        <div class="card-top">
-          <span>${m.name}</span>
-          ${m.val ? `<span class="cp" onclick="cpText(${i})">Kopírovat</span>` : ''}
-        </div>
-        <div class="val ${m.val ? '' : 'empty'}" id="res-${i}">${m.val ? escapeHtml(m.val) : 'Neodpovídá formátu'}</div>
-      </div>
-    `).join('');
+    window._decRes = methods.map(m => m.val || '');
 
-    window._lastRes = methods.map(m => m.val || '');
+    const cardsEl = document.getElementById('cards');
+    cardsEl.innerHTML = '';
+    methods.forEach((m, i) => {
+      const card = document.createElement('div');
+      card.className = 'card' + (m.strict && m.val ? ' hit' : '');
+      const top = document.createElement('div');
+      top.className = 'card-top';
+      const title = document.createElement('span');
+      title.textContent = m.name;
+      top.appendChild(title);
+      if (m.val) {
+        const cpBtn = document.createElement('span');
+        cpBtn.className = 'cp';
+        cpBtn.textContent = 'Kopírovat';
+        cpBtn.onclick = () => cp(i, cpBtn);
+        top.appendChild(cpBtn);
+      }
+      const valDiv = document.createElement('div');
+      valDiv.className = 'val' + (m.val ? '' : ' empty');
+      valDiv.textContent = m.val ? m.val : 'Vstup není v tomto kódu';
+      card.appendChild(top);
+      card.appendChild(valDiv);
+      cardsEl.appendChild(card);
+    });
 
-    let cHtml = '';
-    for (let s = 1; s <= 25; s++) {
-      const dec = raw ? shiftStr(raw, -s) : '';
-      cHtml += `<div class="c-item" title="${escapeHtml(dec)}"><strong style="color:#38bdf8;">-${s}:</strong> ${escapeHtml(dec)}</div>`;
-    }
-    document.getElementById('caesarList').innerHTML = cHtml;
+    let shifts = Array.from({ length: 25 }, (_, i) => {
+      const dec = raw ? shiftStr(raw, -(i + 1)) : '';
+      return { s: i + 1, dec, score: scoreText(dec) };
+    });
+    if (hasLetters) shifts.sort((a, b) => b.score - a.score);
+
+    const caesarEl = document.getElementById('caesarList');
+    caesarEl.innerHTML = '';
+    shifts.forEach((item, idx) => {
+      const div = document.createElement('div');
+      div.className = 'c-item' + (hasLetters && idx === 0 ? ' best' : '');
+      const b = document.createElement('strong');
+      b.style.color = '#38bdf8';
+      b.textContent = '-' + item.s + ': ';
+      div.appendChild(b);
+      div.appendChild(document.createTextNode(item.dec));
+      caesarEl.appendChild(div);
+    });
   }
 
-  function cpText(i) {
-    navigator.clipboard.writeText(window._lastRes[i]);
-  }
-
-  function escapeHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  function cp(i, el) {
+    navigator.clipboard.writeText(window._decRes[i]).then(() => {
+      el.textContent = 'Zkopírováno!';
+      setTimeout(() => el.textContent = 'Kopírovat', 1000);
+    });
   }
 
   decodeAll();
