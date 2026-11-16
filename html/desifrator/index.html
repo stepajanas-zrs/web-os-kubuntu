@@ -75,23 +75,25 @@
     '-....':'6','--...':'7','---..':'8','----.':'9','.-.-.-':'.','--..--':',','..--..':'?','-.-.--':'!'
   };
 
-  const shiftStr = (s, n) => s.replace(/[a-zA-Z]/g, c => {
-    const b = c <= 'Z' ? 65 : 97;
-    return String.fromCharCode(((c.charCodeAt(0) - b + n) % 26 + 26) % 26 + b);
-  });
+  function shiftStr(s, n) {
+    return s.replace(/[a-zA-Z]/g, function(c) {
+      const b = c <= 'Z' ? 65 : 97;
+      return String.fromCharCode(((c.charCodeAt(0) - b + n) % 26 + 26) % 26 + b);
+    });
+  }
 
   function decodeVigenere(s, key) {
     const k = (key || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z]/g, '');
     if (!k) return null;
     let ki = 0;
-    return s.replace(/[a-zA-Z]/g, c => {
+    return s.replace(/[a-zA-Z]/g, function(c) {
       const b = c <= 'Z' ? 65 : 97;
       return String.fromCharCode(((c.charCodeAt(0) - b - (k.charCodeAt(ki++ % k.length) - 65)) % 26 + 26) % 26 + b);
     });
   }
 
   function decodeAtbash(s) {
-    return s.replace(/[a-zA-Z]/g, c => {
+    return s.replace(/[a-zA-Z]/g, function(c) {
       const b = c <= 'Z' ? 65 : 97;
       return String.fromCharCode(b + (25 - (c.charCodeAt(0) - b)));
     });
@@ -100,7 +102,9 @@
   function decodeMorse(s) {
     const t = s.trim();
     if (!t || !/^[.\-\/\s|]+$/.test(t) || !/[.\-]/.test(t)) return null;
-    const out = t.split(/\s+/).map(tok => (tok === '/' || tok === '|') ? ' ' : (MORSE[tok] || '?')).join('');
+    const out = t.split(/\s+/).map(function(tok) {
+      return (tok === '/' || tok === '|') ? ' ' : (MORSE[tok] || '?');
+    }).join('');
     return out.includes('?') ? null : out;
   }
 
@@ -110,32 +114,45 @@
     try {
       const res = decodeURIComponent(escape(atob(clean)));
       return /[\x00-\x08\x0E-\x1F\uFFFD]/.test(res) ? null : res;
-    } catch { return null; }
+    } catch (e) { return null; }
   }
 
   function decodeBin(s) {
     const clean = s.replace(/\s+/g, '');
-    if (clean.length < 8 || clean.length % 8 !== 0 || !/^+$/.test(clean)) return null;
-    try { return new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(clean.match(/.{8}/g).map(b => parseInt(b, 2)))); } catch { return null; }
+    if (clean.length < 8 || clean.length % 8 !== 0) return null;
+    for (let i = 0; i < clean.length; i++) {
+      if (clean[i] !== '0' && clean[i] !== '1') return null;
+    }
+    try {
+      const bytes = new Uint8Array(clean.match(/.{8}/g).map(function(b) { return parseInt(b, 2); }));
+      return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    } catch (e) { return null; }
   }
 
   function decodeHex(s) {
     const clean = s.replace(/\s+/g, '');
     if (clean.length < 4 || clean.length % 2 !== 0 || !/^[0-9a-fA-F]+$/.test(clean)) return null;
-    try { return new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(clean.match(/.{2}/g).map(h => parseInt(h, 16)))); } catch { return null; }
+    try {
+      const bytes = new Uint8Array(clean.match(/.{2}/g).map(function(h) { return parseInt(h, 16); }));
+      return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    } catch (e) { return null; }
   }
 
   function decodeA1Z26(s) {
     const t = s.trim();
     if (!t || !/^[\d\s\-\/]+$/.test(t) || !/\d/.test(t)) return null;
-    const decoded = t.split(/\s*\/\s*/).map(w => {
+    const decoded = t.split(/\s*\/\s*/).map(function(w) {
       const nums = w.split(/[\s\-]+/).filter(Boolean).map(Number);
-      return (!nums.length || nums.some(n => n < 1 || n > 26)) ? null : nums.map(n => String.fromCharCode(64 + n)).join('');
+      if (!nums.length || nums.some(function(n) { return n < 1 || n > 26; })) return null;
+      return nums.map(function(n) { return String.fromCharCode(64 + n); }).join('');
     });
     return decoded.includes(null) ? null : decoded.join(' ');
   }
 
-  const scoreText = str => (str.toLowerCase().match(/[aeoinstlrkdmvpuhz]/g) || []).length / Math.max(1, str.length);
+  function scoreText(str) {
+    const m = str.toLowerCase().match(/[aeoinstlrkdmvpuhz]/g);
+    return (m ? m.length : 0) / Math.max(1, str.length);
+  }
 
   function setEx(t) {
     document.getElementById('in').value = t;
@@ -156,15 +173,15 @@
       { name: 'Vigenèrova šifra (' + (key || '—') + ')', val: hasLetters ? decodeVigenere(raw, key) : null },
       { name: 'Atbash (obrácená abeceda)', val: hasLetters ? decodeAtbash(raw) : null },
       { name: 'ROT13 (posun zpět o 13)', val: hasLetters ? shiftStr(raw, -13) : null },
-      { name: 'Text pozpátku', val: raw.trim() ? [...raw].reverse().join('') : null },
-      { name: 'URL dekódování (%xx)', val: raw.includes('%') ? (() => { try { return decodeURIComponent(raw); } catch { return null; } })() : null, strict: true }
+      { name: 'Text pozpátku', val: raw.trim() ? Array.from(raw).reverse().join('') : null },
+      { name: 'URL dekódování (%xx)', val: raw.includes('%') ? (function() { try { return decodeURIComponent(raw); } catch (e) { return null; } })() : null, strict: true }
     ];
 
-    window._decRes = methods.map(m => m.val || '');
+    window._decRes = methods.map(function(m) { return m.val || ''; });
 
     const cardsEl = document.getElementById('cards');
     cardsEl.innerHTML = '';
-    methods.forEach((m, i) => {
+    methods.forEach(function(m, i) {
       const card = document.createElement('div');
       card.className = 'card' + (m.strict && m.val ? ' hit' : '');
       const top = document.createElement('div');
@@ -176,7 +193,7 @@
         const cpBtn = document.createElement('span');
         cpBtn.className = 'cp';
         cpBtn.textContent = 'Kopírovat';
-        cpBtn.onclick = () => cp(i, cpBtn);
+        cpBtn.onclick = function() { cp(i, cpBtn); };
         top.appendChild(cpBtn);
       }
       const valDiv = document.createElement('div');
@@ -187,15 +204,16 @@
       cardsEl.appendChild(card);
     });
 
-    let shifts = Array.from({ length: 25 }, (_, i) => {
-      const dec = raw ? shiftStr(raw, -(i + 1)) : '';
-      return { s: i + 1, dec, score: scoreText(dec) };
-    });
-    if (hasLetters) shifts.sort((a, b) => b.score - a.score);
+    const shifts = [];
+    for (let s = 1; s <= 25; s++) {
+      const dec = raw ? shiftStr(raw, -s) : '';
+      shifts.push({ s: s, dec: dec, score: scoreText(dec) });
+    }
+    if (hasLetters) shifts.sort(function(a, b) { return b.score - a.score; });
 
     const caesarEl = document.getElementById('caesarList');
     caesarEl.innerHTML = '';
-    shifts.forEach((item, idx) => {
+    shifts.forEach(function(item, idx) {
       const div = document.createElement('div');
       div.className = 'c-item' + (hasLetters && idx === 0 ? ' best' : '');
       const b = document.createElement('strong');
@@ -208,9 +226,9 @@
   }
 
   function cp(i, el) {
-    navigator.clipboard.writeText(window._decRes[i]).then(() => {
+    navigator.clipboard.writeText(window._decRes[i]).then(function() {
       el.textContent = 'Zkopírováno!';
-      setTimeout(() => el.textContent = 'Kopírovat', 1000);
+      setTimeout(function() { el.textContent = 'Kopírovat'; }, 1000);
     });
   }
 
