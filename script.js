@@ -21,7 +21,7 @@ const HTML_LIST = [
   { name: 'piner', path: 'html/spiner/index.html' },
   { name: 'hodiny', path: 'html/hodiny/index.html' },
   { name: 'prevodník čísel', path: 'html/ciselny_prevod/index.html' },
-  { name: '', path: 'html//index.html' },
+  { name: 'porovnávač textu', path: 'html/porovnattext/index.html' },
   { name: '', path: 'html//index.html' },
   { name: '', path: 'html//index.html' },
 ];
