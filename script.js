@@ -90,7 +90,7 @@ function bootDesktop() {
   }
   updateClock(); setInterval(updateClock, 1000);
 }
-// ============================================================================
+/// ============================================================================
 // MICRO-KERNEL WEB OS - ČÁST 2 ZE 2 (OKNA, FULLSCREEN A APLIKACE)
 // ============================================================================
 function requestPid(app_type) {
@@ -127,7 +127,7 @@ function buildDesktopIcons() {
   if (!desktopIcons) return; desktopIcons.innerHTML = '';
   const apps = [
     ['Notepad', 'notepad', '✎'], ['Files', 'files', '📁'], ['Calculator', 'calculator', '🧮'], 
-    ['Učebnice', 'textbook', '📚'], ['Web Hry', 'games', '🎮'], ['Pygame Hry', 'pygame', '🐍'], ['html prohlížeč', 'html', '🐍']
+    ['Učebnice', 'textbook', '📚'], ['Web Hry', 'games', '🎮'], ['Pygame Hry', 'pygame', '🐍'], ['HTML prohlížeč', 'html', '🌐']
   ];
   apps.forEach(([name, app, em]) => {
     const btn = document.createElement('button'); btn.className = 'desktop-icon';
@@ -159,9 +159,10 @@ function allocateRenderLayer(win) {
         content.querySelectorAll('.pg-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active');
         content.querySelector('.pg-screen').innerHTML = `<iframe src="${btn.dataset.path}" style="width:100%;height:100%;border:none;" allow="autoplay;fullscreen"></iframe>`;
       });
-      if (win.type === 'html') {
-    const buttonsHtml = HTML_LIST.map(g => `<button class="subject-tab pg-btn" data-path="${g.path}">🐍 ${g.name}</button>`).join('');
-    content.innerHTML = `<div class="app-content" style="display:flex;padding:0;height:100%;"><div class="file-list" style="width:180px;padding:10px;border-right:1px solid var(--panel-border);display:flex;flex-direction:column;gap:6px;"><div style="font-size:0.75rem;color:var(--text-muted);font-weight:bold;">MOJE HRY</div>${buttonsHtml}</div><div class="pg-screen" style="flex:1;background:#0a0f1d;display:flex;align-items:center;justify-content:center;padding:0;"><p style="color:var(--text-muted);">Vyberte hru ze seznamu vlevo.</p></div></div>`;
+    });
+  } else if (win.type === 'html') {
+    const buttonsHtml = HTML_LIST.map(g => `<button class="subject-tab pg-btn" data-path="${g.path}">🌐 ${g.name || 'Kalkulačka (HTML)'}</button>`).join('');
+    content.innerHTML = `<div class="app-content" style="display:flex;padding:0;height:100%;"><div class="file-list" style="width:180px;padding:10px;border-right:1px solid var(--panel-border);display:flex;flex-direction:column;gap:6px;"><div style="font-size:0.75rem;color:var(--text-muted);font-weight:bold;">HTML SOUBORY</div>${buttonsHtml}</div><div class="pg-screen" style="flex:1;background:#0a0f1d;display:flex;align-items:center;justify-content:center;padding:0;"><p style="color:var(--text-muted);">Vyberte soubor vlevo.</p></div></div>`;
     content.querySelectorAll('.pg-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         content.querySelectorAll('.pg-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active');
