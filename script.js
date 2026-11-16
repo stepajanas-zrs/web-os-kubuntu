@@ -19,6 +19,7 @@ const HTML_LIST = [
   { name: 'malovaní', path: 'html/malovani/index.html' },
   { name: 'timer', path: 'html/timer/index.html' },
   { name: 'piner', path: 'html/spiner/index.html' },
+  { name: 'hodiny', path: 'html/hodiny/index.html' },
 ];
 
 // SEZNAM VAŠICH HER ZE SLOŽKY "pygame_hry"
