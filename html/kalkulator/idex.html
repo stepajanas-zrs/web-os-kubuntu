@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vědecko-fyzikální kalkulačka</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .header-buttons {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .btn-tables {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-tables:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .display {
+            background: #f0f0f0;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: right;
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+            word-wrap: break-word;
+            word-break: break-all;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 15px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-number, .btn-operator {
+            background: #f0f0f0;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+
+        .btn-number:hover {
+            background: #e0e0e0;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-operator {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-operator:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-equals {
+            background: #48bb78;
+            color: white;
+            grid-column: span 2;
+        }
+
+        .btn-equals:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(72, 187, 120, 0.4);
+        }
+
+        .btn-clear {
+            background: #f56565;
+            color: white;
+            grid-column: span 2;
+        }
+
+        .btn-clear:hover {
+            background: #e53e3e;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 101, 101, 0.4);
+        }
+
+        .scientific-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+        }
+
+        .scientific-section h3 {
+            color: #667eea;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .scientific-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .btn-scientific {
+            background: #ed8936;
+            color: white;
+            padding: 12px;
+            font-size: 14px;
+        }
+
+        .btn-scientific:hover {
+            background: #dd6b20;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(237, 137, 54, 0.4);
+        }
+
+        .constants-section {
+            margin-top: 15px;
+        }
+
+        .constants-section h3 {
+            color: #667eea;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .constants-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .btn-constant {
+            background: #9f7aea;
+            color: white;
+            padding: 10px;
+            font-size: 12px;
+        }
+
+        .btn-constant:hover {
+            background: #805ad5;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(159, 122, 234, 0.4);
+        }
+
+        .history {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 15px;
+            max-height: 100px;
+            overflow-y: auto;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .history-item {
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Modal styly */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal.show {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 20px;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1001;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .close-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            padding: 0;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-btn:hover {
+            color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th {
+            background: #f0f0f0;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        .section-title {
+            color: #667eea;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .section-title:first-child {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 Vědecká kalkulačka</h1>
+
+        <div class="header-buttons">
+            <button class="btn-tables" onclick="openTables()">📚 Otevřít tabulky</button>
+        </div>
+
+        <div class="display" id="display">0</div>
+
+        <div class="buttons-grid">
+            <button class="btn-number" onclick="appendNumber('7')">7</button>
+            <button class="btn-number" onclick="appendNumber('8')">8</button>
+            <button class="btn-number" onclick="appendNumber('9')">9</button>
+            <button class="btn-operator" onclick="appendOperator('/')">/</button>
+
+            <button class="btn-number" onclick="appendNumber('4')">4</button>
+            <button class="btn-number" onclick="appendNumber('5')">5</button>
+            <button class="btn-number" onclick="appendNumber('6')">6</button>
+            <button class="btn-operator" onclick="appendOperator('*')">×</button>
+
+            <button class="btn-number" onclick="appendNumber('1')">1</button>
+            <button class="btn-number" onclick="appendNumber('2')">2</button>
+            <button class="btn-number" onclick="appendNumber('3')">3</button>
+            <button class="btn-operator" onclick="appendOperator('-')">−</button>
+
+            <button class="btn-number" onclick="appendNumber('0')">0</button>
+            <button class="btn-number" onclick="appendNumber('.')">.</button>
+            <button class="btn-operator" onclick="appendOperator('+')">+</button>
+            <button class="btn-operator" onclick="toggleSign()">±</button>
+
+            <button class="btn-clear" onclick="clearDisplay()">C</button>
+            <button class="btn-clear" onclick="deleteLast()">⌫</button>
+            <button class="btn-equals" onclick="calculate()">=</button>
+        </div>
+
+        <div class="scientific-section">
+            <h3>Vědecké funkce</h3>
+            <div class="scientific-buttons">
+                <button class="btn-scientific" onclick="appendFunction('sqrt')">√</button>
+                <button class="btn-scientific" onclick="appendFunction('pow2')">x²</button>
+                <button class="btn-scientific" onclick="appendFunction('pow3')">x³</button>
+                <button class="btn-scientific" onclick="appendFunction('sin')">sin</button>
+                <button class="btn-scientific" onclick="appendFunction('cos')">cos</button>
+                <button class="btn-scientific" onclick="appendFunction('tan')">tan</button>
+                <button class="btn-scientific" onclick="appendFunction('log')">log</button>
+                <button class="btn-scientific" onclick="appendFunction('ln')">ln</button>
+                <button class="btn-scientific" onclick="appendFunction('exp')">eˣ</button>
+            </div>
+        </div>
+
+        <div class="constants-section">
+            <h3>Fyzikální konstanty</h3>
+            <div class="constants-buttons">
+                <button class="btn-constant" onclick="insertConstant(3.14159265359)">π</button>
+                <button class="btn-constant" onclick="insertConstant(2.71828182846)">e</button>
+                <button class="btn-constant" onclick="insertConstant(9.81)">g</button>
+                <button class="btn-constant" onclick="insertConstant(299792458)">c</button>
+                <button class="btn-constant" onclick="insertConstant(6.62607015e-34)">h</button>
+                <button class="btn-constant" onclick="insertConstant(1.602176634e-19)">eₚ</button>
+            </div>
+        </div>
+
+        <div class="history" id="history"></div>
+    </div>
+
+    <!-- Modal pro tabulky -->
+    <div id="tablesModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📚 Vědecké tabulky</h2>
+                <button class="close-btn" onclick="closeTables()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="math" onclick="switchTab('math')">Matematika</button>
+                    <button class="tab-btn" data-tab="physics" onclick="switchTab('physics')">Fyzika</button>
+                    <button class="tab-btn" data-tab="chemistry" onclick="switchTab('chemistry')">Chemie</button>
+                </div>
+
+                <!-- Matematika -->
+                <div id="math" class="tab-content active">
+                    <div class="section-title">Goniometrické funkce</div>
+                    <table>
+                        <tr>
+                            <th>Úhel (°)</th>
+                            <th>sin</th>
+                            <th>cos</th>
+                            <th>tan</th>
+                        </tr>
+                        <tr><td>0°</td><td>0</td><td>1</td><td>0</td></tr>
+                        <tr><td>30°</td><td>0,5</td><td>0,866</td><td>0,577</td></tr>
+                        <tr><td>45°</td><td>0,707</td><td>0,707</td><td>1</td></tr>
+                        <tr><td>60°</td><td>0,866</td><td>0,5</td><td>1,732</td></tr>
+                        <tr><td>90°</td><td>1</td><td>0</td><td>∞</td></tr>
+                    </table>
+
+                    <div class="section-title">Logaritmy</div>
+                    <table>
+                        <tr>
+                            <th>x</th>
+                            <th>log₁₀(x)</th>
+                            <th>ln(x)</th>
+                        </tr>
+                        <tr><td>1</td><td>0</td><td>0</td></tr>
+                        <tr><td>2</td><td>0,301</td><td>0,693</td></tr>
+                        <tr><td>10</td><td>1</td><td>2,303</td></tr>
+                        <tr><td>100</td><td>2</td><td>4,605</td></tr>
+                    </table>
+                </div>
+
+                <!-- Fyzika -->
+                <div id="physics" class="tab-content">
+                    <div class="section-title">Fyzikální konstanty</div>
+                    <table>
+                        <tr>
+                            <th>Konstanta</th>
+                            <th>Hodnota</th>
+                            <th>Jednotka</th>
+                        </tr>
+                        <tr><td>Rychlost světla (c)</td><td>299 792 458</td><td>m/s</td></tr>
+                        <tr><td>Gravitační konstanta (G)</td><td>6,674 × 10⁻¹¹</td><td>m³ kg⁻¹ s⁻²</td></tr>
+                        <tr><td>Planckova konstanta (h)</td><td>6,626 × 10⁻³⁴</td><td>J·s</td></tr>
+                        <tr><td>Elementární náboj (e)</td><td>1,602 × 10⁻¹⁹</td><td>C</td></tr>
+                    </table>
+
+                    <div class="section-title">Zrychlení</div>
+                    <table>
+                        <tr>
+                            <th>Veličina</th>
+                            <th>Hodnota</th>
+                        </tr>
+                        <tr><td>Tíhové zrychlení (g)</td><td>9,81 m/s²</td></tr>
+                        <tr><td>g na Měsíci</td><td>1,62 m/s²</td></tr>
+                    </table>
+                </div>
+
+                <!-- Chemie -->
+                <div id="chemistry" class="tab-content">
+                    <div class="section-title">Molární hmotnosti prvků</div>
+                    <table>
+                        <tr>
+                            <th>Prvek</th>
+                            <th>Symbol</th>
+                            <th>g/mol</th>
+                        </tr>
+                        <tr><td>Vodík</td><td>H</td><td>1,008</td></tr>
+                        <tr><td>Uhlík</td><td>C</td><td>12,01</td></tr>
+                        <tr><td>Dusík</td><td>N</td><td>14,01</td></tr>
+                        <tr><td>Kyslík</td><td>O</td><td>16,00</td></tr>
+                        <tr><td>Sodík</td><td>Na</td><td>22,99</td></tr>
+                        <tr><td>Hořčík</td><td>Mg</td><td>24,31</td></tr>
+                        <tr><td>Vápník</td><td>Ca</td><td>40,08</td></tr>
+                    </table>
+
+                    <div class="section-title">pH tabulka</div>
+                    <table>
+                        <tr>
+                            <th>Látka</th>
+                            <th>pH</th>
+                        </tr>
+                        <tr><td>Kyselina chlorovodíková</td><td>0</td></tr>
+                        <tr><td>Citronová šťáva</td><td>2</td></tr>
+                        <tr><td>Voda</td><td>7</td></tr>
+                        <tr><td>Mýdlo</td><td>9</td></tr>
+                        <tr><td>Hydroxid sodný</td><td>14</td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let display = document.getElementById('display');
+        let history = document.getElementById('history');
+        let currentValue = '0';
+        let previousValue = '';
+        let operator = '';
+        let shouldResetDisplay = false;
+        let calculations = [];
+
+        function updateDisplay() {
+            display.textContent = currentValue;
+        }
+
+        function appendNumber(num) {
+            if (shouldResetDisplay) {
+                currentValue = num;
+                shouldResetDisplay = false;
+            } else {
+                if (currentValue === '0' && num !== '.') {
+                    currentValue = num;
+                } else if (num === '.' && currentValue.includes('.')) {
+                    return;
+                } else {
+                    currentValue += num;
+                }
+            }
+            updateDisplay();
+        }
+
+        function appendOperator(op) {
+            if (operator !== '' && !shouldResetDisplay) {
+                calculate();
+            }
+            previousValue = currentValue;
+            operator = op;
+            shouldResetDisplay = true;
+        }
+
+        function appendFunction(func) {
+            const num = parseFloat(currentValue);
+            let result;
+
+            switch(func) {
+                case 'sqrt':
+                    result = Math.sqrt(num);
+                    break;
+                case 'pow2':
+                    result = num * num;
+                    break;
+                case 'pow3':
+                    result = num * num * num;
+                    break;
+                case 'sin':
+                    result = Math.sin(num * Math.PI / 180);
+                    break;
+                case 'cos':
+                    result = Math.cos(num * Math.PI / 180);
+                    break;
+                case 'tan':
+                    result = Math.tan(num * Math.PI / 180);
+                    break;
+                case 'log':
+                    result = Math.log10(num);
+                    break;
+                case 'ln':
+                    result = Math.log(num);
+                    break;
+                case 'exp':
+                    result = Math.exp(num);
+                    break;
+            }
+
+            currentValue = Math.round(result * 1000000000000) / 1000000000000;
+            addToHistory(`${func}(${num}) = ${currentValue}`);
+            updateDisplay();
+        }
+
+        function insertConstant(value) {
+            currentValue = value.toString();
+            shouldResetDisplay = true;
+            updateDisplay();
+        }
+
+        function calculate() {
+            if (operator === '' || previousValue === '') return;
+
+            const prev = parseFloat(previousValue);
+            const current = parseFloat(currentValue);
+            let result;
+
+            switch(operator) {
+                case '+':
+                    result = prev + current;
+                    break;
+                case '-':
+                    result = prev - current;
+                    break;
+                case '*':
+                    result = prev * current;
+                    break;
+                case '/':
+                    result = current !== 0 ? prev / current : 0;
+                    break;
+            }
+
+            result = Math.round(result * 1000000000000) / 1000000000000;
+            addToHistory(`${previousValue} ${operator} ${currentValue} = ${result}`);
+            currentValue = result.toString();
+            operator = '';
+            previousValue = '';
+            shouldResetDisplay = true;
+            updateDisplay();
+        }
+
+        function clearDisplay() {
+            currentValue = '0';
+            previousValue = '';
+            operator = '';
+            shouldResetDisplay = false;
+            updateDisplay();
+        }
+
+        function deleteLast() {
+            if (currentValue.length > 1) {
+                currentValue = currentValue.slice(0, -1);
+            } else {
+                currentValue = '0';
+            }
+            updateDisplay();
+        }
+
+        function toggleSign() {
+            const num = parseFloat(currentValue);
+            currentValue = (-num).toString();
+            updateDisplay();
+        }
+
+        function addToHistory(entry) {
+            calculations.unshift(entry);
+            if (calculations.length > 5) {
+                calculations.pop();
+            }
+            history.innerHTML = calculations.map(item =>
+                `<div class="history-item">${item}</div>`
+            ).join('');
+        }
+
+        // Funkce pro tabulky
+        function openTables() {
+            document.getElementById('tablesModal').classList.add('show');
+        }
+
+        function closeTables() {
+            document.getElementById('tablesModal').classList.remove('show');
+        }
+
+        function switchTab(tabName) {
+            // Skryj všechny taxy
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+
+            // Odeberi active z tlačítek
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+
+            // Zobraz vybraný tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Zavření modalu kliknutím mimo
+        window.onclick = function(event) {
+            const modal = document.getElementById('tablesModal');
+            if (event.target == modal) {
+                modal.classList.remove('show');
+            }
+        }
+
+        // Klávesnicové zkratky
+        document.addEventListener('keydown', (e) => {
+            if (e.key >= '0' && e.key <= '9') appendNumber(e.key);
+            if (e.key === '.') appendNumber('.');
+            if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/') {
+                e.preventDefault();
+                appendOperator(e.key);
+            }
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                calculate();
+            }
+            if (e.key === 'Backspace') {
+                e.preventDefault();
+                deleteLast();
+            }
+            if (e.key === 'Escape') {
+                clearDisplay();
+            }
+        });
+
+        updateDisplay();
+    </script>
+</body>
+</html>
