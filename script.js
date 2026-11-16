@@ -22,8 +22,8 @@ const HTML_LIST = [
   { name: 'hodiny', path: 'html/hodiny/index.html' },
   { name: 'prevodník čísel', path: 'html/ciselny_prevod/index.html' },
   { name: 'porovnávač textu', path: 'html/porovnattext/index.html' },
-  { name: '', path: 'html//index.html' },
-  { name: '', path: 'html//index.html' },
+  { name: 'dešifrator', path: 'html/desifrator/index.html' },
+  { name: 'šifrator', path: 'html/sifra/index.html' },
 ];
 
 // SEZNAM VAŠICH HER ZE SLOŽKY "pygame_hry"
