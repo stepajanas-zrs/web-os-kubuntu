@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stopky & Mezičasy</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --primary: #3b82f6;
+            --green: #10b981;
+            --red: #ef4444;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --border: #334155;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: var(--card);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 440px;
+            text-align: center;
+        }
+
+        h2 {
+            margin: 0 0 20px 0;
+            font-size: 20px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .time-display {
+            font-size: 54px;
+            font-weight: bold;
+            font-variant-numeric: tabular-nums;
+            margin: 15px 0 5px 0;
+            letter-spacing: 1px;
+        }
+
+        .ms {
+            font-size: 32px;
+            color: var(--primary);
+        }
+
+        .current-lap-display {
+            font-size: 16px;
+            color: var(--muted);
+            font-variant-numeric: tabular-nums;
+            margin-bottom: 25px;
+            height: 22px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            color: white;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-start {
+            background-color: var(--green);
+        }
+
+        .btn-stop {
+            background-color: var(--red);
+        }
+
+        .btn-secondary {
+            background-color: #334155;
+        }
+
+        .laps-container {
+            border-top: 1px solid var(--border);
+            padding-top: 15px;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        th {
+            color: var(--muted);
+            font-weight: 600;
+            text-align: left;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th:nth-child(2), td:nth-child(2) {
+            text-align: center;
+        }
+
+        th:last-child, td:last-child {
+            text-align: right;
+        }
+
+        td {
+            padding: 10px 4px;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+        }
+
+        .fastest {
+            color: var(--green);
+            font-weight: bold;
+        }
+
+        .slowest {
+            color: var(--red);
+            font-weight: bold;
+        }
+
+        .hint {
+            margin-top: 15px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Stopky</h2>
+
+    <div class="time-display" id="mainDisplay">00:00<span class="ms">.00</span></div>
+    <div class="current-lap-display" id="lapDisplay">Aktuální kolo: 00:00.00</div>
+
+    <div class="controls">
+        <button class="btn btn-secondary" id="lapBtn" onclick="recordLap()" disabled>Mezičas</button>
+        <button class="btn btn-start" id="startStopBtn" onclick="toggleTimer()">Start</button>
+    </div>
+
+    <div class="laps-container" id="lapsWrapper" style="display: none;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Kolo</th>
+                    <th>Čas kola</th>
+                    <th>Celkový čas</th>
+                </tr>
+            </thead>
+            <tbody id="lapsBody"></tbody>
+        </table>
+    </div>
+
+    <div class="hint">Tip: Mezerník = Start / Pauza, klávesa L = Mezičas</div>
+</div>
+
+<script>
+    let startTime = 0;
+    let elapsedTime = 0;
+    let lapStartTime = 0;
+    let timerInterval = null;
+    let isRunning = false;
+    let laps = [];
+
+    const mainDisplay = document.getElementById('mainDisplay');
+    const lapDisplay = document.getElementById('lapDisplay');
+    const startStopBtn = document.getElementById('startStopBtn');
+    const lapBtn = document.getElementById('lapBtn');
+    const lapsWrapper = document.getElementById('lapsWrapper');
+    const lapsBody = document.getElementById('lapsBody');
+
+    function formatTime(ms) {
+        const totalCentiseconds = Math.floor(ms / 10);
+        const centiseconds = totalCentiseconds % 100;
+        const totalSeconds = Math.floor(totalCentiseconds / 100);
+        const seconds = totalSeconds % 60;
+        const minutes = Math.floor(totalSeconds / 60);
+
+        const minStr = String(minutes).padStart(2, '0');
+        const secStr = String(seconds).padStart(2, '0');
+        const csStr = String(centiseconds).padStart(2, '0');
+
+        return {
+            main: `${minStr}:${secStr}`,
+            cs: `.${csStr}`,
+            full: `${minStr}:${secStr}.${csStr}`
+        };
+    }
+
+    function updateDisplay() {
+        const now = performance.now();
+        const currentTotal = elapsedTime + (now - startTime);
+        const currentLap = currentTotal - lapStartTime;
+
+        const formattedTotal = formatTime(currentTotal);
+        const formattedLap = formatTime(currentLap);
+
+        mainDisplay.innerHTML = `${formattedTotal.main}<span class="ms">${formattedTotal.cs}</span>`;
+        lapDisplay.textContent = `Aktuální kolo: ${formattedLap.full}`;
+    }
+
+    function toggleTimer() {
+        if (!isRunning) {
+            isRunning = true;
+            startTime = performance.now();
+            timerInterval = setInterval(updateDisplay, 16);
+
+            startStopBtn.textContent = 'Stop';
+            startStopBtn.className = 'btn btn-stop';
+
+            lapBtn.disabled = false;
+            lapBtn.textContent = 'Mezičas';
+            lapBtn.onclick = recordLap;
+        } else {
+            isRunning = false;
+            clearInterval(timerInterval);
+            elapsedTime += performance.now() - startTime;
+
+            startStopBtn.textContent = 'Pokračovat';
+            startStopBtn.className = 'btn btn-start';
+
+            lapBtn.textContent = 'Reset';
+            lapBtn.onclick = resetTimer;
+        }
+    }
+
+    function recordLap() {
+        if (!isRunning) return;
+        const currentTotal = elapsedTime + (performance.now() - startTime);
+        const lapDuration = currentTotal - lapStartTime;
+        lapStartTime = currentTotal;
+
+        laps.unshift({
+            number: laps.length + 1,
+            lapTime: lapDuration,
+            totalTime: currentTotal
+        });
+
+        renderLaps();
+    }
+
+    function resetTimer() {
+        clearInterval(timerInterval);
+        isRunning = false;
+        elapsedTime = 0;
+        lapStartTime = 0;
+        laps = [];
+
+        mainDisplay.innerHTML = `00:00<span class="ms">.00</span>`;
+        lapDisplay.textContent = `Aktuální kolo: 00:00.00`;
+
+        startStopBtn.textContent = 'Start';
+        startStopBtn.className = 'btn btn-start';
+
+        lapBtn.textContent = 'Mezičas';
+        lapBtn.disabled = true;
+        lapBtn.onclick = recordLap;
+
+        lapsWrapper.style.display = 'none';
+        lapsBody.innerHTML = '';
+    }
+
+    function renderLaps() {
+        if (laps.length === 0) return;
+        lapsWrapper.style.display = 'block';
+        lapsBody.innerHTML = '';
+
+        let minTime = Infinity;
+        let maxTime = -Infinity;
+
+        if (laps.length >= 2) {
+            laps.forEach(l => {
+                if (l.lapTime < minTime) minTime = l.lapTime;
+                if (l.lapTime > maxTime) maxTime = l.lapTime;
+            });
+        }
+
+        laps.forEach(lap => {
+            const tr = document.createElement('tr');
+            let rowClass = '';
+            if (laps.length >= 2) {
+                if (lap.lapTime === minTime) rowClass = 'fastest';
+                else if (lap.lapTime === maxTime) rowClass = 'slowest';
+            }
+
+            tr.className = rowClass;
+            tr.innerHTML = `
+                <td>Kolo ${lap.number}</td>
+                <td>${formatTime(lap.lapTime).full}</td>
+                <td>${formatTime(lap.totalTime).full}</td>
+            `;
+            lapsBody.appendChild(tr);
+        });
+    }
+
+    // Klávesové zkratky
+    document.addEventListener('keydown', function(e) {
+        if (e.code === 'Space') {
+            e.preventDefault();
+            toggleTimer();
+        } else if (e.key === 'l' || e.key === 'L') {
+            if (isRunning) recordLap();
+        }
+    });
+</script>
+
+</body>
+</html>
