@@ -15,6 +15,7 @@ const APP_REGISTRY = {
 const HTML_LIST = [
   { name: 'kalkulačka', path: 'html/kalkulator/index.html' },
   { name: 'Aimy', path: 'html/aimy/index.html' },
+  { name: 'pomodoro', path: 'html/pomodoro/index.html' },
 ];
 
 // SEZNAM VAŠICH HER ZE SLOŽKY "pygame_hry"
