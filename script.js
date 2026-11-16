@@ -24,6 +24,7 @@ const HTML_LIST = [
   { name: 'porovnávač textu', path: 'html/porovnattext/index.html' },
   { name: 'dešifrator', path: 'html/desifrator/index.html' },
   { name: 'šifrator', path: 'html/sifra/index.html' },
+  { name: 'kalkulačka v římě', path: 'html/rimsecislice/index.html' },
 ];
 
 // SEZNAM VAŠICH HER ZE SLOŽKY "pygame_hry"
