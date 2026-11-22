@@ -9,10 +9,8 @@ const APP_REGISTRY = {
   games: { title: 'CrazyGames Centrum', w: 850, h: 550 },
   pygame: { title: 'Pygame Herní Složka', w: 960, h: 680 },
   html: { title: 'Prohlížeč HTML stránek', w: 960, h: 680 },
-  calendar: { title: 'Kalendář', w: 500, h: 520 } // <-- PŘIDAT TENTO ŘÁDEK
+  calendar: { title: 'Kalendář', w: 460, h: 480 }
 };
-
-
 
 const HTML_LIST = [
   { name: 'kalkulačka', path: 'html/kalkulator/index.html' },
@@ -29,14 +27,12 @@ const HTML_LIST = [
   { name: 'kalkulačka v římě', path: 'html/rimsecislice-kalkulator/index.html' },
 ];
 
-// SEZNAM VAŠICH HER ZE SLOŽKY "pygame_hry"
 const PYGAME_LIST = [
   { name: 'snake', path: 'moje_hry/snake/index.html' },
   { name: 'Moje Hra', path: 'moje_hry/snake2/index.html' },
   { name: 'folow_block', path: 'html/folow_block/index.html' },
   { name: 'subway', path: 'html/subway/index.html' },
 ];
-
 const LOGIN = { username: 'stepan', password: 'janas' };
 let desktopIcons, windowsLayer, taskbarApps, startMenu, startButton, clock, loginScreen, loginForm, loginError;
 
@@ -81,7 +77,6 @@ function initLogin() {
   if (loginScreen) loginScreen.classList.add('hidden');
   bootDesktop();
 }
-
 function bootDesktop() {
   if (sys_state.kernel_ready || !getAuthState()) return;
   sys_state.kernel_ready = true;
@@ -104,9 +99,7 @@ function bootDesktop() {
   }
   updateClock(); setInterval(updateClock, 1000);
 }
-/// ============================================================================
-// MICRO-KERNEL WEB OS - ČÁST 2 ZE 2 (OKNA, FULLSCREEN A APLIKACE)
-// ============================================================================
+
 function requestPid(app_type) {
   if (!windowsLayer) return;
   for (let [pid, win] of sys_state.m_windows) {
@@ -146,7 +139,8 @@ function buildDesktopIcons() {
     ['Učebnice', 'textbook', '📚'], 
     ['Web Hry', 'games', '🎮'], 
     ['Pygame Hry', 'pygame', '🐍'],
-    ['HTML prohlížeč', 'html', '🌐']
+    ['HTML prohlížeč', 'html', '🌐'],
+    ['Kalendář', 'calendar', '📅']
   ];
   apps.forEach(([name, app, em]) => {
     const btn = document.createElement('button'); btn.className = 'desktop-icon';
@@ -154,8 +148,6 @@ function buildDesktopIcons() {
     btn.addEventListener('click', () => requestPid(app)); desktopIcons.appendChild(btn);
   });
 }
-
-
 function allocateRenderLayer(win) {
   const node = document.createElement('div'); node.className = 'window'; node.id = win.id;
   node.style.width = `${win.w}px`; node.style.height = `${win.h}px`; node.style.transform = `translate3d(${win.x}px, ${win.y}px, 0px)`;
@@ -200,8 +192,21 @@ function allocateRenderLayer(win) {
     content.innerHTML = `<div class="app-content" style="display:flex;gap:10px;height:100%"><div class="file-list" style="width:180px"><button class="subject-tab active" data-page="Ucebnice/Strana_1_Konverzace.txt">Strana 1</button><button class="subject-tab" data-page="Ucebnice/Strana_2_Jidlo.txt">Strana 2</button></div><div class="textbook-view-zone" style="flex:1"></div></div>`;
   } else if (win.type === 'games') {
     content.innerHTML = `<div class="app-content" style="padding:0;height:100%"><iframe src="https://crazygames.com" style="width:100%;height:100%;border:none" allow="autoplay;gamepad;fullscreen"></iframe></div>`;
+  } else if (win.type === 'calendar') {
+    content.innerHTML = `
+      <div class="app-content" style="display:flex;flex-direction:column;height:100%;gap:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <button class="primary-btn" id="cal-p-${win.id}">◀</button>
+          <strong id="cal-t-${win.id}" style="text-transform:capitalize;"></strong>
+          <button class="primary-btn" id="cal-n-${win.id}">▶</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);text-align:center;opacity:0.7;">
+          <div>Po</div><div>Út</div><div>St</div><div>Čt</div><div>Pá</div><div>So</div><div>Ne</div>
+        </div>
+        <div id="cal-g-${win.id}" style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;flex:1;"></div>
+      </div>`;
+    initCalendarApp(win.id, content);
   }
-
   win.node = node; sys_state.m_windows.set(win.id, win);
   node.addEventListener('pointerdown', () => switchFocus(win.id));
   node.querySelectorAll('.control-btn').forEach(btn => btn.addEventListener('click', (e) => {
@@ -232,6 +237,24 @@ function allocateRenderLayer(win) {
   if (win.type === 'calculator' && window.initScientificCalculator) window.initScientificCalculator(win.id, node);
   if (win.type === 'textbook' && window.initTextbookApp) window.initTextbookApp(win.id, node);
   setTimeout(() => node.classList.add('window-open'), 10); renderTaskbar(); switchFocus(win.id);
+}
+
+function initCalendarApp(id, el) {
+  let d = new Date();
+  const draw = () => {
+    const y = d.getFullYear(), m = d.getMonth(), now = new Date();
+    el.querySelector(`#cal-t-${id}`).textContent = d.toLocaleDateString('cs-CZ', { month: 'long', year: 'numeric' });
+    const g = el.querySelector(`#cal-g-${id}`); g.innerHTML = '';
+    const first = (new Date(y, m, 1).getDay() + 6) % 7, days = new Date(y, m + 1, 0).getDate();
+    for (let i = 0; i < first; i++) g.innerHTML += '<div></div>';
+    for (let day = 1; day <= days; day++) {
+      const act = day === now.getDate() && m === now.getMonth() && y === now.getFullYear();
+      g.innerHTML += `<div style="display:flex;align-items:center;justify-content:center;border-radius:6px;background:${act ? '#3b82f6' : 'rgba(255,255,255,0.06)'}">${day}</div>`;
+    }
+  };
+  el.querySelector(`#cal-p-${id}`).onclick = () => { d.setMonth(d.getMonth() - 1); draw(); };
+  el.querySelector(`#cal-n-${id}`).onclick = () => { d.setMonth(d.getMonth() + 1); draw(); };
+  draw();
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initLogin); else initLogin();
