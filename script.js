@@ -107,10 +107,15 @@ function bootDesktop() {
 
 function setupTrayCalendar() {
   if (!clock || document.getElementById('tray-cal-btn')) return;
+  clock.parentNode.style.display = 'flex';
+  clock.parentNode.style.alignItems = 'center';
+  clock.parentNode.style.gap = '8px';
+
   const btn = document.createElement('button');
   btn.id = 'tray-cal-btn';
-  btn.style.cssText = 'background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:inherit;cursor:pointer;padding:4px 10px;border-radius:6px;margin-right:8px;font:inherit;';
+  btn.style.cssText = 'background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:inherit;cursor:pointer;padding:4px 10px;border-radius:6px;font:inherit;white-space:nowrap;';
   clock.parentNode.insertBefore(btn, clock);
+
 
   const pop = document.createElement('div');
   pop.id = 'tray-cal-pop';
