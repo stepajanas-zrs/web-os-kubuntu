@@ -8,8 +8,10 @@ const APP_REGISTRY = {
   textbook: { title: 'Učebnice a slovníky', w: 680, h: 500 },
   games: { title: 'CrazyGames Centrum', w: 850, h: 550 },
   pygame: { title: 'Pygame Herní Složka', w: 960, h: 680 },
-  html: { title: 'Prohlížeč HTML stránek', w: 960, h: 680 }
+  html: { title: 'Prohlížeč HTML stránek', w: 960, h: 680 },
+  calendar: { title: 'Kalendář', w: 500, h: 520 } // <-- PŘIDAT TENTO ŘÁDEK
 };
+
 
 
 const HTML_LIST = [
