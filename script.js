@@ -115,7 +115,13 @@ function setupTrayCalendar() {
   btn.id = 'tray-cal-btn';
   btn.style.cssText = 'background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:inherit;cursor:pointer;padding:4px 10px;border-radius:6px;font:inherit;white-space:nowrap;';
   clock.parentNode.insertBefore(btn, clock);
-
+  const pop = document.createElement('div');
+  pop.id = 'tray-cal-pop';
+  pop.className = 'hidden';
+  pop.style.cssText = 'position:fixed;bottom:56px;right:12px;width:290px;background:#161b29;border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:12px;z-index:9999;box-shadow:0 10px 30px rgba(0,0,0,0.6);color:#fff;';
+  pop.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><button class="primary-btn" id="tc-p">◀</button><strong id="tc-t" style="text-transform:capitalize;"></strong><button class="primary-btn" id="tc-n">▶</button></div><div style="display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:0.8rem;opacity:0.7;margin-bottom:4px;"><div>Po</div><div>Út</div><div>St</div><div>Čt</div><div>Pá</div><div>So</div><div>Ne</div></div><div id="tc-g" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;height:200px;"></div>`;
+  document.body.appendChild(pop);
+  
   let d = new Date();
   const draw = () => {
     const y = d.getFullYear(), m = d.getMonth(), now = new Date();
