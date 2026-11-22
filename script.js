@@ -8,8 +8,7 @@ const APP_REGISTRY = {
   textbook: { title: 'Učebnice a slovníky', w: 680, h: 500 },
   games: { title: 'CrazyGames Centrum', w: 850, h: 550 },
   pygame: { title: 'Pygame Herní Složka', w: 960, h: 680 },
-  html: { title: 'Prohlížeč HTML stránek', w: 960, h: 680 },
-  calendar: { title: 'Kalendář', w: 460, h: 480 }
+  html: { title: 'Prohlížeč HTML stránek', w: 960, h: 680 }
 };
 
 const HTML_LIST = [
@@ -48,7 +47,13 @@ const sys_state = {
 
 function getAuthState() { return localStorage.getItem('web-os-auth') === 'true'; }
 function setAuthState(val) { localStorage.setItem('web-os-auth', val ? 'true' : 'false'); }
-function updateClock() { if (clock) clock.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+
+function updateClock() {
+  const now = new Date();
+  if (clock) clock.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const calBtn = document.getElementById('tray-cal-btn');
+  if (calBtn) calBtn.textContent = now.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' });
+}
 
 function initLogin() {
   loginScreen = document.getElementById('login-screen');
@@ -85,7 +90,7 @@ function bootDesktop() {
   startButton = document.getElementById('start-button'); clock = document.getElementById('clock');
   
   document.querySelectorAll('.hidden-on-login').forEach(el => el.style.display = '');
-  buildDesktopIcons(); renderTaskbar();
+  buildDesktopIcons(); renderTaskbar(); setupTrayCalendar();
 
   if (startButton) startButton.addEventListener('click', (e) => { e.stopPropagation(); startMenu?.classList.toggle('hidden'); });
   document.addEventListener('click', (e) => { if (startMenu && !e.target.closest('#start-button') && !e.target.closest('#start-menu')) startMenu.classList.add('hidden'); });
@@ -100,6 +105,37 @@ function bootDesktop() {
   updateClock(); setInterval(updateClock, 1000);
 }
 
+function setupTrayCalendar() {
+  if (!clock || document.getElementById('tray-cal-btn')) return;
+  const btn = document.createElement('button');
+  btn.id = 'tray-cal-btn';
+  btn.style.cssText = 'background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:inherit;cursor:pointer;padding:4px 10px;border-radius:6px;margin-right:8px;font:inherit;';
+  clock.parentNode.insertBefore(btn, clock);
+
+  const pop = document.createElement('div');
+  pop.id = 'tray-cal-pop';
+  pop.className = 'hidden';
+  pop.style.cssText = 'position:fixed;bottom:56px;right:12px;width:290px;background:#161b29;border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:12px;z-index:9999;box-shadow:0 10px 30px rgba(0,0,0,0.6);color:#fff;';
+  pop.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><button class="primary-btn" id="tc-p">◀</button><strong id="tc-t" style="text-transform:capitalize;"></strong><button class="primary-btn" id="tc-n">▶</button></div><div style="display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:0.8rem;opacity:0.7;margin-bottom:4px;"><div>Po</div><div>Út</div><div>St</div><div>Čt</div><div>Pá</div><div>So</div><div>Ne</div></div><div id="tc-g" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;height:200px;"></div>`;
+  document.body.appendChild(pop);
+
+  let d = new Date();
+  const draw = () => {
+    const y = d.getFullYear(), m = d.getMonth(), now = new Date();
+    pop.querySelector('#tc-t').textContent = d.toLocaleDateString('cs-CZ', { month: 'long', year: 'numeric' });
+    const g = pop.querySelector('#tc-g'); g.innerHTML = '';
+    const first = (new Date(y, m, 1).getDay() + 6) % 7, days = new Date(y, m + 1, 0).getDate();
+    for (let i = 0; i < first; i++) g.innerHTML += '<div></div>';
+    for (let day = 1; day <= days; day++) {
+      const act = day === now.getDate() && m === now.getMonth() && y === now.getFullYear();
+      g.innerHTML += `<div style="display:flex;align-items:center;justify-content:center;border-radius:6px;font-size:0.85rem;background:${act ? '#3b82f6' : 'rgba(255,255,255,0.06)'}">${day}</div>`;
+    }
+  };
+  pop.querySelector('#tc-p').onclick = (e) => { e.stopPropagation(); d.setMonth(d.getMonth() - 1); draw(); };
+  pop.querySelector('#tc-n').onclick = (e) => { e.stopPropagation(); d.setMonth(d.getMonth() + 1); draw(); };
+  btn.onclick = (e) => { e.stopPropagation(); pop.classList.toggle('hidden'); draw(); };
+  document.addEventListener('click', (e) => { if (!e.target.closest('#tray-cal-pop') && !e.target.closest('#tray-cal-btn')) pop.classList.add('hidden'); });
+}
 function requestPid(app_type) {
   if (!windowsLayer) return;
   for (let [pid, win] of sys_state.m_windows) {
@@ -139,8 +175,7 @@ function buildDesktopIcons() {
     ['Učebnice', 'textbook', '📚'], 
     ['Web Hry', 'games', '🎮'], 
     ['Pygame Hry', 'pygame', '🐍'],
-    ['HTML prohlížeč', 'html', '🌐'],
-    ['Kalendář', 'calendar', '📅']
+    ['HTML prohlížeč', 'html', '🌐']
   ];
   apps.forEach(([name, app, em]) => {
     const btn = document.createElement('button'); btn.className = 'desktop-icon';
@@ -192,21 +227,8 @@ function allocateRenderLayer(win) {
     content.innerHTML = `<div class="app-content" style="display:flex;gap:10px;height:100%"><div class="file-list" style="width:180px"><button class="subject-tab active" data-page="Ucebnice/Strana_1_Konverzace.txt">Strana 1</button><button class="subject-tab" data-page="Ucebnice/Strana_2_Jidlo.txt">Strana 2</button></div><div class="textbook-view-zone" style="flex:1"></div></div>`;
   } else if (win.type === 'games') {
     content.innerHTML = `<div class="app-content" style="padding:0;height:100%"><iframe src="https://crazygames.com" style="width:100%;height:100%;border:none" allow="autoplay;gamepad;fullscreen"></iframe></div>`;
-  } else if (win.type === 'calendar') {
-    content.innerHTML = `
-      <div class="app-content" style="display:flex;flex-direction:column;height:100%;gap:10px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <button class="primary-btn" id="cal-p-${win.id}">◀</button>
-          <strong id="cal-t-${win.id}" style="text-transform:capitalize;"></strong>
-          <button class="primary-btn" id="cal-n-${win.id}">▶</button>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(7,1fr);text-align:center;opacity:0.7;">
-          <div>Po</div><div>Út</div><div>St</div><div>Čt</div><div>Pá</div><div>So</div><div>Ne</div>
-        </div>
-        <div id="cal-g-${win.id}" style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;flex:1;"></div>
-      </div>`;
-    initCalendarApp(win.id, content);
   }
+
   win.node = node; sys_state.m_windows.set(win.id, win);
   node.addEventListener('pointerdown', () => switchFocus(win.id));
   node.querySelectorAll('.control-btn').forEach(btn => btn.addEventListener('click', (e) => {
@@ -237,24 +259,6 @@ function allocateRenderLayer(win) {
   if (win.type === 'calculator' && window.initScientificCalculator) window.initScientificCalculator(win.id, node);
   if (win.type === 'textbook' && window.initTextbookApp) window.initTextbookApp(win.id, node);
   setTimeout(() => node.classList.add('window-open'), 10); renderTaskbar(); switchFocus(win.id);
-}
-
-function initCalendarApp(id, el) {
-  let d = new Date();
-  const draw = () => {
-    const y = d.getFullYear(), m = d.getMonth(), now = new Date();
-    el.querySelector(`#cal-t-${id}`).textContent = d.toLocaleDateString('cs-CZ', { month: 'long', year: 'numeric' });
-    const g = el.querySelector(`#cal-g-${id}`); g.innerHTML = '';
-    const first = (new Date(y, m, 1).getDay() + 6) % 7, days = new Date(y, m + 1, 0).getDate();
-    for (let i = 0; i < first; i++) g.innerHTML += '<div></div>';
-    for (let day = 1; day <= days; day++) {
-      const act = day === now.getDate() && m === now.getMonth() && y === now.getFullYear();
-      g.innerHTML += `<div style="display:flex;align-items:center;justify-content:center;border-radius:6px;background:${act ? '#3b82f6' : 'rgba(255,255,255,0.06)'}">${day}</div>`;
-    }
-  };
-  el.querySelector(`#cal-p-${id}`).onclick = () => { d.setMonth(d.getMonth() - 1); draw(); };
-  el.querySelector(`#cal-n-${id}`).onclick = () => { d.setMonth(d.getMonth() + 1); draw(); };
-  draw();
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initLogin); else initLogin();
