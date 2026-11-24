@@ -141,12 +141,16 @@ function setupTrayCalendar() {
   document.addEventListener('click', (e) => { if (!e.target.closest('#tray-cal-pop') && !e.target.closest('#tray-cal-btn')) pop.classList.add('hidden'); });
 }
 function requestPid(app_type) {
-  if (app_type === 'games') { window.open('https://crazygames.com', '_blank'); return; }
-  if (app_type === 'luanti') { window.open('https://dustlabs.io', '_blank'); return; }
+  if (app_type === 'games') {
+    window.open('https://crazygames.com', '_blank');
+    return;
+  }
+  if (app_type === 'luanti') {
+    window.open('https://dustlabs.io', '_blank');
+    return;
+  }
   if (!windowsLayer) return;
 
-
-  }
   const meta = APP_REGISTRY[app_type]; if (!meta) return;
   const pid = `pid-${sys_state.next_pid++}`;
   const win = { id: pid, type: app_type, title: meta.title, x: 80 + (sys_state.m_windows.size * 25), y: 50 + (sys_state.m_windows.size * 20), w: meta.w, h: meta.h, minimized: false, maximized: false };
