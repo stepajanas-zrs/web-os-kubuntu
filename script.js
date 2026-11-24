@@ -179,7 +179,7 @@ function buildDesktopIcons() {
     ['Učebnice', 'textbook', '📚'], 
     ['Web Hry', 'games', '🎮'], 
     ['Pygame Hry', 'pygame', '🐍'],
-    ['HTML prohlížeč', 'html', '🌐']
+    ['HTML prohlížeč', 'html', '🌐'],
     ['Luanti', 'luanti', '⛏️']
   ];
   apps.forEach(([name, app, em]) => {
