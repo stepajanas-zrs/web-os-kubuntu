@@ -141,9 +141,12 @@ function setupTrayCalendar() {
   document.addEventListener('click', (e) => { if (!e.target.closest('#tray-cal-pop') && !e.target.closest('#tray-cal-btn')) pop.classList.add('hidden'); });
 }
 function requestPid(app_type) {
+  if (app_type === 'luanti') {
+    window.open('https://dustlabs.io', '_blank');
+    return;
+  }
   if (!windowsLayer) return;
-  for (let [pid, win] of sys_state.m_windows) {
-    if (win.type === app_type) { if (win.minimized) { win.node.style.display = 'flex'; win.minimized = false; } switchFocus(pid); return; }
+
   }
   const meta = APP_REGISTRY[app_type]; if (!meta) return;
   const pid = `pid-${sys_state.next_pid++}`;
