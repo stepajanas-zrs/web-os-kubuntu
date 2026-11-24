@@ -12,8 +12,6 @@ const APP_REGISTRY = {
   luanti: { title: 'Luanti Online', w: 1024, h: 640 }
 };
 
-};
-
 const HTML_LIST = [
   { name: 'kalkulačka', path: 'html/kalkulator/index.html' },
   { name: 'Aimy', path: 'html/aimy/index.html' },
