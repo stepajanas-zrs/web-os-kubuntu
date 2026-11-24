@@ -146,7 +146,7 @@ function requestPid(app_type) {
     return;
   }
   if (app_type === 'luanti') {
-    window.open('https://dustlabs.io', '_blank');
+    window.open('https://minetest.dustlabs.io/?launch', '_blank');
     return;
   }
   if (!windowsLayer) return;
