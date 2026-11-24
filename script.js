@@ -9,7 +9,7 @@ const APP_REGISTRY = {
   games: { title: 'CrazyGames Centrum', w: 850, h: 550 },
   pygame: { title: 'Pygame Herní Složka', w: 960, h: 680 },
   html: { title: 'Prohlížeč HTML stránek', w: 960, h: 680 },
-  luanti: { title: 'Luanti Online', w: 1024, h: 640 },
+  luanti: { title: 'Luanti Online', w: 1024, h: 640 }
 };
 
 };
