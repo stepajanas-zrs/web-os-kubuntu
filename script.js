@@ -8,7 +8,10 @@ const APP_REGISTRY = {
   textbook: { title: 'Učebnice a slovníky', w: 680, h: 500 },
   games: { title: 'CrazyGames Centrum', w: 850, h: 550 },
   pygame: { title: 'Pygame Herní Složka', w: 960, h: 680 },
-  html: { title: 'Prohlížeč HTML stránek', w: 960, h: 680 }
+  html: { title: 'Prohlížeč HTML stránek', w: 960, h: 680 },
+  luanti: { title: 'Luanti Online', w: 1024, h: 640 }
+};
+
 };
 
 const HTML_LIST = [
@@ -179,6 +182,7 @@ function buildDesktopIcons() {
     ['Web Hry', 'games', '🎮'], 
     ['Pygame Hry', 'pygame', '🐍'],
     ['HTML prohlížeč', 'html', '🌐']
+    ['Luanti', 'luanti', '⛏️']
   ];
   apps.forEach(([name, app, em]) => {
     const btn = document.createElement('button'); btn.className = 'desktop-icon';
@@ -230,6 +234,16 @@ function allocateRenderLayer(win) {
     content.innerHTML = `<div class="app-content" style="display:flex;gap:10px;height:100%"><div class="file-list" style="width:180px"><button class="subject-tab active" data-page="Ucebnice/Strana_1_Konverzace.txt">Strana 1</button><button class="subject-tab" data-page="Ucebnice/Strana_2_Jidlo.txt">Strana 2</button></div><div class="textbook-view-zone" style="flex:1"></div></div>`;
   } else if (win.type === 'games') {
     content.innerHTML = `<div class="app-content" style="padding:0;height:100%"><iframe src="https://crazygames.com" style="width:100%;height:100%;border:none" allow="autoplay;gamepad;fullscreen"></iframe></div>`;
+  }
+    } else if (win.type === 'luanti') {
+    content.innerHTML = `
+      <div class="app-content" style="display:flex;flex-direction:column;padding:0;height:100%;">
+        <div style="padding:6px 10px;background:#111625;border-bottom:1px solid var(--panel-border);display:flex;justify-content:space-between;align-items:center;font-size:0.85rem;">
+          <span>Webový klient Luanti (v menu vyberte <b>Public Servers</b> nebo <b>Custom</b>)</span>
+          <a href="https://minetest.dustlabs.io/" target="_blank" class="primary-btn" style="text-decoration:none;padding:3px 8px;">Otevřít na celou obrazovku ↗</a>
+        </div>
+        <iframe src="https://minetest.dustlabs.io/" style="flex:1;width:100%;border:none;" allow="autoplay;fullscreen;pointer-lock"></iframe>
+      </div>`;
   }
 
   win.node = node; sys_state.m_windows.set(win.id, win);
