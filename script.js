@@ -9,7 +9,7 @@ const APP_REGISTRY = {
   games: { title: 'CrazyGames Centrum', w: 850, h: 550 },
   pygame: { title: 'Pygame Herní Složka', w: 960, h: 680 },
   html: { title: 'Prohlížeč HTML stránek', w: 960, h: 680 },
-  luanti: { title: 'Luanti Online', w: 1024, h: 640 }
+  luanti: { title: 'Luanti Online', w: 1024, h: 640 },
 };
 
 };
@@ -39,7 +39,7 @@ const LOGIN = { username: 'stepan', password: 'janas' };
 let desktopIcons, windowsLayer, taskbarApps, startMenu, startButton, clock, loginScreen, loginForm, loginError;
 
 const sys_state = {
-  m_windows: new Map(), next_pid: 1, active_pid: null, kernel_ready: false, selectedFile: 'Home/Welcome.txt',
+  m_windows: new Map(), next_pid: 1, active_pid: null, kernel_ready: false, selectedle: 'Home/Welcome.txt',
   fs: {
     'Home/Welcome.txt': 'Vítejte ve Web OS na Vercelu!',
     'pygame_hry/NAVOD.txt': '1. Zkompilujte hru: pygbag hra.py\n2. Vložte složku build/web do pygame_hry/hra1/\n3. Nahrajte na Vercel.',
